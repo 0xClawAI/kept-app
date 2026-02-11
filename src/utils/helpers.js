@@ -1,15 +1,5 @@
-import * as Haptics from 'expo-haptics';
-
 export function triggerHaptic(type = 'medium') {
-  try {
-    if (type === 'success') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.success);
-    } else if (type === 'light') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.light);
-    } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.medium);
-    }
-  } catch {}
+  // Haptics disabled — was crashing on Expo Go
 }
 
 export function formatCurrency(amount) {
@@ -32,7 +22,6 @@ export function calculateStreak(noSpendDays) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else if (getDateKey(d) === getDateKey(today) && !noSpendDays[key]) {
-      // Today not marked yet — check yesterday
       d.setDate(d.getDate() - 1);
     } else {
       break;
