@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { triggerHaptic, formatCurrency, uuid, getDateKey } from '../utils/helpers';
 
@@ -376,10 +376,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { paddingHorizontal: Spacing.lg, paddingBottom: 100, flexGrow: 1 },
   screenHeader: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
-  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  screenSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs },
+  title: HeaderStyle.title,
+  screenSubtitle: HeaderStyle.subtitle,
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: Colors.textSecondary, fontSize: FontSize.bodyLarge },
+  loadingText: { color: Colors.textSecondary, fontSize: FontSize.body },
 
   tabBar: {
     flexDirection: 'row', marginHorizontal: Spacing.lg,
@@ -400,13 +400,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     borderColor: Colors.primaryMuted,
   },
-  totalLabel: { fontSize: FontSize.small + 1, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  totalLabel: { fontSize: FontSize.caption, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
   totalValue: { fontSize: 36, fontWeight: '800', color: Colors.primary, marginTop: Spacing.xs },
   totalCount: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.xs },
 
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl, paddingHorizontal: Spacing.lg },
   emptyIcon: { fontSize: 48, marginBottom: Spacing.md },
-  emptyTitle: { fontSize: FontSize.title - 4, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
+  emptyTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
   emptyText: { fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 
   dateHeader: {
@@ -429,9 +429,9 @@ const styles = StyleSheet.create({
   },
   categoryEmoji: { fontSize: 18 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
+  itemName: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
   itemMeta: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, marginTop: 2 },
-  itemPrice: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.primary },
+  itemPrice: { fontSize: FontSize.section, fontWeight: '700', color: Colors.primary },
 
   longPressHint: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, textAlign: 'center', marginTop: Spacing.md },
 
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   },
   ruleCheckActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   ruleCheckText: { fontSize: 14, color: '#fff', fontWeight: '700' },
-  ruleText: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '500', color: Colors.textPrimary },
+  ruleText: { flex: 1, fontSize: FontSize.body, fontWeight: '500', color: Colors.textPrimary },
   ruleTextInactive: { textDecorationLine: 'line-through', color: Colors.textDisabled },
   editBtn: { padding: Spacing.sm, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   editBtnText: { fontSize: 16 },
@@ -485,12 +485,12 @@ const styles = StyleSheet.create({
     width: 40, height: 5, borderRadius: 3,
     backgroundColor: Colors.border, alignSelf: 'center', marginBottom: Spacing.lg,
   },
-  modalTitle: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
+  modalTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
   modalSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginBottom: Spacing.lg },
 
   input: {
     backgroundColor: Colors.surface, borderRadius: Radius.md,
-    padding: Spacing.md, fontSize: FontSize.bodyLarge, color: Colors.textPrimary,
+    padding: Spacing.md, fontSize: FontSize.body, color: Colors.textPrimary,
     marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
     minHeight: 48,
   },
@@ -500,11 +500,11 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
     backgroundColor: Colors.surface, alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textSecondary },
+  cancelBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textSecondary },
   saveBtn: {
     flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
     backgroundColor: Colors.primary, alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: '#000' },
+  saveBtnText: { fontSize: FontSize.body, fontWeight: '600', color: '#000' },
 });

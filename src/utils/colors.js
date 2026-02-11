@@ -10,12 +10,11 @@ export const Spacing = {
 };
 
 export const FontSize = {
-  caption: 11,
+  caption: 12,
   small: 13,
-  body: 15,
-  bodyLarge: 16,
-  subtitle: 18,
-  title: 24,
+  body: 16,
+  section: 20,
+  title: 28,
   hero: 32,
   display: 48,
 };
@@ -56,10 +55,10 @@ export const CardStyle = {
 // Shared header style
 export const HeaderStyle = {
   title: {
-    fontSize: FontSize.hero,
+    fontSize: FontSize.title,
     fontWeight: '800',
     color: Colors.textPrimary,
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: FontSize.body,

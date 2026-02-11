@@ -1,8 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert,
-} from 'react-native';
-import { Colors } from '../utils/colors';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { formatCurrency, getWeeksTotal, triggerHaptic } from '../utils/helpers';
 
@@ -14,33 +12,22 @@ export default function WeeksScreen() {
 
   const toggleWeek = useCallback((num) => {
     const done = weeks.includes(num);
-    let updated;
-    if (done) {
-      updated = weeks.filter(n => n !== num);
-      triggerHaptic('light');
-    } else {
-      updated = [...weeks, num];
-      triggerHaptic('success');
-    }
+    const updated = done ? weeks.filter(n => n !== num) : [...weeks, num];
+    triggerHaptic(done ? 'light' : 'success');
     updateWeeks(updated);
   }, [weeks, updateWeeks]);
 
   const resetChallenge = () => {
-    Alert.alert(
-      'Reset Challenge',
-      'This will clear all completed weeks. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: () => updateWeeks([]) },
-      ]
-    );
+    Alert.alert('Reset Challenge', 'This will clear all completed weeks. Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reset', style: 'destructive', onPress: () => updateWeeks([]) },
+    ]);
   };
 
   const allDone = weeks.length === 52;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Progress */}
       <View style={styles.progressCard}>
         <View style={styles.progressRow}>
           <View>
@@ -62,31 +49,23 @@ export default function WeeksScreen() {
         <View style={styles.celebrationCard}>
           <Text style={styles.celebrationEmoji}>🏆</Text>
           <Text style={styles.celebrationTitle}>Challenge Complete!</Text>
-          <Text style={styles.celebrationText}>
-            You saved {formatCurrency(1378)}! A full year of discipline.
-          </Text>
+          <Text style={styles.celebrationText}>You saved {formatCurrency(1378)}! A full year of discipline.</Text>
         </View>
       )}
 
-      {/* Week list */}
       {Array.from({ length: 52 }, (_, i) => i + 1).map(num => {
         const done = weeks.includes(num);
         return (
           <TouchableOpacity
             key={num}
             style={[styles.weekRow, done && styles.weekRowDone]}
-            onPress={() => toggleWeek(num)}
-            activeOpacity={0.6}
+            onPress={() => toggleWeek(num)} activeOpacity={0.6}
           >
             <View style={[styles.weekCheck, done && styles.weekCheckDone]}>
               {done && <Text style={styles.weekCheckMark}>✓</Text>}
             </View>
-            <Text style={[styles.weekLabel, done && styles.weekLabelDone]}>
-              Week {num}
-            </Text>
-            <Text style={[styles.weekAmount, done && styles.weekAmountDone]}>
-              {formatCurrency(num)}
-            </Text>
+            <Text style={[styles.weekLabel, done && styles.weekLabelDone]}>Week {num}</Text>
+            <Text style={[styles.weekAmount, done && styles.weekAmountDone]}>{formatCurrency(num)}</Text>
           </TouchableOpacity>
         );
       })}
@@ -96,51 +75,52 @@ export default function WeeksScreen() {
           <Text style={styles.resetText}>Reset Challenge</Text>
         </TouchableOpacity>
       )}
-      <View style={{ height: 20 }} />
+      <View style={{ height: Spacing.lg }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingTop: 8, paddingBottom: 40 },
+  content: { padding: Spacing.lg, paddingTop: Spacing.sm, paddingBottom: Spacing.xxl },
   progressCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 16,
+    ...CardStyle,
+    marginBottom: Spacing.md,
   },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  progressLabel: { fontSize: 11, color: Colors.textSecondary, letterSpacing: 0.5 },
-  progressValue: { fontSize: 22, fontWeight: '700', color: Colors.secondary, marginTop: 2 },
-  progressBarBg: { height: 8, backgroundColor: Colors.surfaceElevated, borderRadius: 4, overflow: 'hidden' },
-  progressBarFill: { height: 8, borderRadius: 4, backgroundColor: Colors.secondary },
-  progressPct: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginTop: 8 },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
+  progressLabel: { fontSize: FontSize.caption, color: Colors.textSecondary, letterSpacing: 0.5 },
+  progressValue: { fontSize: FontSize.section, fontWeight: '700', color: Colors.secondary, marginTop: 2 },
+  progressBarBg: { height: Spacing.sm, backgroundColor: Colors.surfaceElevated, borderRadius: Spacing.xs, overflow: 'hidden' },
+  progressBarFill: { height: Spacing.sm, borderRadius: Spacing.xs, backgroundColor: Colors.secondary },
+  progressPct: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
   celebrationCard: {
-    backgroundColor: 'rgba(129,140,248,0.15)', borderRadius: 16, padding: 24,
-    alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: Colors.secondary,
+    backgroundColor: 'rgba(129,140,248,0.15)', borderRadius: Radius.lg, padding: Spacing.lg,
+    alignItems: 'center', marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.secondary,
   },
   celebrationEmoji: { fontSize: 48 },
-  celebrationTitle: { fontSize: 22, fontWeight: '700', color: Colors.secondary, marginTop: 8 },
-  celebrationText: { fontSize: 14, color: Colors.textSecondary, marginTop: 4, textAlign: 'center' },
+  celebrationTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.secondary, marginTop: Spacing.sm },
+  celebrationText: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: Spacing.xs, textAlign: 'center' },
   weekRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    marginBottom: 6, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md, padding: Spacing.md,
+    marginBottom: Spacing.sm - 2, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48,
   },
   weekRowDone: { borderColor: Colors.secondary, backgroundColor: 'rgba(129,140,248,0.08)' },
   weekCheck: {
-    width: 26, height: 26, borderRadius: 13,
+    width: 28, height: 28, borderRadius: 14,
     borderWidth: 2, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
   },
   weekCheckDone: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   weekCheckMark: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  weekLabel: { flex: 1, fontSize: 16, color: Colors.textPrimary, fontWeight: '500' },
+  weekLabel: { flex: 1, fontSize: FontSize.body, color: Colors.textPrimary, fontWeight: '500' },
   weekLabelDone: { color: Colors.textSecondary },
-  weekAmount: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
+  weekAmount: { fontSize: FontSize.body, fontWeight: '700', color: Colors.textPrimary },
   weekAmountDone: { color: Colors.secondary },
   resetBtn: {
-    marginTop: 20, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 12, borderWidth: 1, borderColor: Colors.error,
+    marginTop: Spacing.lg, alignSelf: 'center', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
+    borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.error, minHeight: 44, justifyContent: 'center',
   },
-  resetText: { color: Colors.error, fontWeight: '600', fontSize: 14 },
+  resetText: { color: Colors.error, fontWeight: '600', fontSize: FontSize.small + 1 },
 });

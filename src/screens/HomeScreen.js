@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import Confetti from '../components/Confetti';
 import {
@@ -105,8 +105,8 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Kept</Text>
-          <Text style={styles.headerSubtitle}>Your money. Your rules.</Text>
+          <Text style={HeaderStyle.title}>Kept</Text>
+          <Text style={HeaderStyle.subtitle}>Your money. Your rules.</Text>
         </View>
 
         {!hasAnyData ? (
@@ -159,16 +159,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: Colors.textSecondary, fontSize: FontSize.bodyLarge },
+  loadingText: { color: Colors.textSecondary, fontSize: FontSize.body },
 
   header: { marginBottom: Spacing.lg },
-  headerTitle: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  headerSubtitle: { fontSize: FontSize.bodyLarge, color: Colors.textSecondary, marginTop: Spacing.xs },
 
   heroCard: {
     ...CardStyle,
     borderRadius: Radius.xl,
-    padding: Spacing.lg + Spacing.xs,
+    padding: Spacing.lg,
     alignItems: 'center',
     marginBottom: Spacing.lg,
     borderColor: Colors.primaryMuted,
@@ -179,10 +177,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     backgroundColor: Colors.primaryMuted,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm - 2,
+    paddingVertical: Spacing.sm,
     borderRadius: Radius.pill,
   },
-  todayBadgeText: { color: Colors.primary, fontSize: FontSize.small + 1, fontWeight: '600' },
+  todayBadgeText: { color: Colors.primary, fontSize: FontSize.small, fontWeight: '600' },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.lg },
   statCard: {
@@ -194,7 +192,7 @@ const styles = StyleSheet.create({
   statIcon: { fontSize: 20, marginBottom: Spacing.sm },
   statValue: { fontSize: FontSize.hero, fontWeight: '700' },
   statLabel: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.xs, fontWeight: '500' },
-  statSubtitle: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, marginTop: 2 },
+  statSubtitle: { fontSize: FontSize.caption, color: Colors.textDisabled, marginTop: 2 },
 
   progressCard: {
     ...CardStyle,
@@ -202,15 +200,15 @@ const styles = StyleSheet.create({
   },
   progressHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   progressIcon: { fontSize: 18, marginRight: Spacing.sm },
-  progressTitle: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
-  progressPct: { fontSize: FontSize.bodyLarge, fontWeight: '700' },
+  progressTitle: { flex: 1, fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
+  progressPct: { fontSize: FontSize.body, fontWeight: '700' },
   progressBarBg: {
-    height: 8,
+    height: Spacing.sm,
     backgroundColor: Colors.border,
     borderRadius: Spacing.xs,
     overflow: 'hidden',
   },
-  progressBarFill: { height: 8, borderRadius: Spacing.xs },
+  progressBarFill: { height: Spacing.sm, borderRadius: Spacing.xs },
   progressSubtext: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.sm },
 
   emptyState: {
@@ -220,6 +218,6 @@ const styles = StyleSheet.create({
   },
   emptyIcon: { fontSize: 64, marginBottom: Spacing.lg },
   emptyTitle: { fontSize: FontSize.title, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
-  emptyText: { fontSize: FontSize.bodyLarge, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: Spacing.md },
-  emptyHint: { fontSize: FontSize.small + 1, color: Colors.primary, textAlign: 'center', fontWeight: '600' },
+  emptyText: { fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: Spacing.md },
+  emptyHint: { fontSize: FontSize.small, color: Colors.primary, textAlign: 'center', fontWeight: '600' },
 });

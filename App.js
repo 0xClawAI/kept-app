@@ -55,7 +55,7 @@ export default function App() {
               tabBarActiveTintColor: Colors.primary,
               tabBarInactiveTintColor: Colors.textDisabled,
               tabBarLabelStyle: {
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: '600',
                 letterSpacing: 0.3,
                 marginTop: 2,

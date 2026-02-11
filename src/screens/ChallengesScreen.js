@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { triggerHaptic, formatCurrency, getEnvelopeTotal, getWeeksTotal } from '../utils/helpers';
 
@@ -180,7 +180,7 @@ export default function ChallengesScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.body }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -243,8 +243,8 @@ export default function ChallengesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  subtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
+  title: HeaderStyle.title,
+  subtitle: { ...HeaderStyle.subtitle, marginBottom: Spacing.lg },
 
   challengeCard: {
     ...CardStyle,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   challengeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   challengeCardIcon: { fontSize: 36, marginRight: Spacing.md },
   challengeCardInfo: { flex: 1 },
-  challengeCardTitle: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.textPrimary },
+  challengeCardTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary },
   challengeCardGoal: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: 2 },
   challengeCardProgress: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.sm },
   challengeCardCta: { fontSize: FontSize.body, color: Colors.primary, fontWeight: '600' },
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
 
   challengeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   backBtn: { minHeight: 44, justifyContent: 'center', paddingRight: Spacing.md },
-  backBtnText: { fontSize: FontSize.subtitle, color: Colors.primary, fontWeight: '600' },
+  backBtnText: { fontSize: FontSize.section, color: Colors.primary, fontWeight: '600' },
   resetTouchable: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
   resetText: { fontSize: FontSize.body, color: Colors.error, fontWeight: '600' },
 
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   completeEmoji: { fontSize: 40, marginBottom: Spacing.sm },
-  completeText: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.primary, textAlign: 'center' },
+  completeText: { fontSize: FontSize.section, fontWeight: '700', color: Colors.primary, textAlign: 'center' },
 
   envelopeGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm - 2, justifyContent: 'center',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   envelopeStuffed: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
   envelopeText: { fontSize: FontSize.caption + 1, fontWeight: '600', color: Colors.textSecondary },
-  envelopeTextStuffed: { fontSize: FontSize.bodyLarge, color: Colors.primary },
+  envelopeTextStuffed: { fontSize: FontSize.body, color: Colors.primary },
 
   weekList: { gap: Spacing.xs },
   weekRow: {
@@ -326,8 +326,8 @@ const styles = StyleSheet.create({
   },
   weekCheckDone: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   weekCheckText: { fontSize: 14, color: '#fff', fontWeight: '700' },
-  weekLabel: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
+  weekLabel: { flex: 1, fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
   weekLabelDone: { color: Colors.textSecondary },
-  weekAmount: { fontSize: FontSize.bodyLarge, fontWeight: '700', color: Colors.textSecondary },
+  weekAmount: { fontSize: FontSize.body, fontWeight: '700', color: Colors.textSecondary },
   weekAmountDone: { color: Colors.secondary },
 });

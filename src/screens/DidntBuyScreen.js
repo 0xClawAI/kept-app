@@ -1,14 +1,46 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal,
   TextInput, Alert, KeyboardAvoidingView, Platform, LayoutAnimation,
+  UIManager, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { formatCurrency, getDidntBuyTotal, uuid, triggerHaptic, getDateKey } from '../utils/helpers';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const CATEGORIES = ['Food & Drink', 'Shopping', 'Entertainment', 'Clothing', 'Tech', 'Home', 'Other'];
+const CATEGORY_EMOJI = {
+  'Food & Drink': '☕', 'Shopping': '🛒', 'Entertainment': '🎬',
+  'Clothing': '👗', 'Tech': '📱', 'Home': '🏠', 'Other': '📦',
+};
+
+function FAB({ onPress }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, friction: 5 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 3 }).start();
+  };
+  return (
+    <Animated.View style={[styles.fabWrap, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function DidntBuyScreen() {
   const { didntBuyItems, updateDidntBuyItems } = useData();
@@ -42,7 +74,6 @@ export default function DidntBuyScreen() {
     if (isNaN(price) || price <= 0) return;
 
     if (editingItem) {
-      // Edit existing
       const updated = didntBuyItems.map(i =>
         i.id === editingItem.id
           ? { ...i, name: itemName.trim(), price, category: itemCategory }
@@ -50,7 +81,6 @@ export default function DidntBuyScreen() {
       );
       updateDidntBuyItems(updated);
     } else {
-      // Add new
       const newItem = {
         id: uuid(),
         name: itemName.trim(),
@@ -107,8 +137,10 @@ export default function DidntBuyScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Didn't Buy It</Text>
-        <Text style={styles.subtitle}>Track items you resisted buying</Text>
+        <View style={styles.header}>
+          <Text style={HeaderStyle.title}>Didn't Buy It</Text>
+          <Text style={HeaderStyle.subtitle}>Track items you resisted buying</Text>
+        </View>
 
         {/* Total card */}
         <View style={styles.totalCard}>
@@ -143,14 +175,7 @@ export default function DidntBuyScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.categoryDot}>
-                    <Text style={styles.categoryEmoji}>
-                      {item.category === 'Food & Drink' ? '☕' :
-                       item.category === 'Shopping' ? '🛒' :
-                       item.category === 'Entertainment' ? '🎬' :
-                       item.category === 'Clothing' ? '👗' :
-                       item.category === 'Tech' ? '📱' :
-                       item.category === 'Home' ? '🏠' : '📦'}
-                    </Text>
+                    <Text style={styles.categoryEmoji}>{CATEGORY_EMOJI[item.category] || '📦'}</Text>
                   </View>
                   <View style={styles.itemInfo}>
                     <Text style={styles.itemName}>{item.name}</Text>
@@ -168,14 +193,7 @@ export default function DidntBuyScreen() {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={openAddModal}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={() => { openAddModal(); triggerHaptic('light'); }} />
 
       {/* Add/Edit Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent>
@@ -221,7 +239,7 @@ export default function DidntBuyScreen() {
                   <Text style={[
                     styles.categoryChipText,
                     itemCategory === cat && styles.categoryChipTextActive,
-                  ]}>{cat}</Text>
+                  ]}>{CATEGORY_EMOJI[cat]} {cat}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -251,84 +269,103 @@ export default function DidntBuyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingBottom: 100 },
-  title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, marginTop: 4, marginBottom: 20 },
+  content: { padding: Spacing.lg, paddingBottom: 100 },
+  header: { marginBottom: Spacing.lg },
+
   totalCard: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 24,
-    alignItems: 'center', borderWidth: 1, borderColor: Colors.border, marginBottom: 24,
+    ...CardStyle,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    borderColor: Colors.border,
   },
-  totalLabel: { fontSize: 11, color: Colors.textSecondary, letterSpacing: 0.5 },
-  totalValue: { fontSize: 40, fontWeight: '700', color: Colors.warning, marginTop: 4, letterSpacing: -1 },
-  totalCount: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  totalLabel: { fontSize: FontSize.caption, color: Colors.textSecondary, letterSpacing: 0.5, fontWeight: '600', textTransform: 'uppercase' },
+  totalValue: { fontSize: 40, fontWeight: '700', color: Colors.warning, marginTop: Spacing.xs, letterSpacing: -1 },
+  totalCount: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.xs },
+
   dateHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 8, marginTop: 8,
+    paddingVertical: Spacing.sm, marginTop: Spacing.sm,
   },
-  dateHeaderText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  dateHeaderAmount: { fontSize: 14, fontWeight: '600', color: Colors.warning },
+  dateHeaderText: { fontSize: FontSize.small, fontWeight: '600', color: Colors.textSecondary },
+  dateHeaderAmount: { fontSize: FontSize.small, fontWeight: '600', color: Colors.warning },
+
   itemRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 6, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border,
+    minHeight: 64,
   },
   categoryDot: {
-    width: 40, height: 40, borderRadius: 12,
+    width: Spacing.xxl, height: Spacing.xxl, borderRadius: Radius.md,
     backgroundColor: Colors.surfaceElevated, alignItems: 'center', justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   categoryEmoji: { fontSize: 18 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  itemMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  itemPrice: { fontSize: 18, fontWeight: '700', color: Colors.warning },
-  hint: { textAlign: 'center', fontSize: 12, color: Colors.textDisabled, marginTop: 16 },
-  emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 22, fontWeight: '600', color: Colors.textPrimary, marginBottom: 8 },
-  emptyText: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, paddingHorizontal: 10 },
+  itemName: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
+  itemMeta: { fontSize: FontSize.caption, color: Colors.textSecondary, marginTop: 2 },
+  itemPrice: { fontSize: FontSize.section, fontWeight: '700', color: Colors.warning },
+
+  hint: { textAlign: 'center', fontSize: FontSize.caption, color: Colors.textDisabled, marginTop: Spacing.md },
+
+  emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl },
+  emptyEmoji: { fontSize: 48, marginBottom: Spacing.md },
+  emptyTitle: { fontSize: FontSize.section, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.sm },
+  emptyText: { fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, paddingHorizontal: Spacing.sm },
+
+  fabWrap: {
+    position: 'absolute', bottom: Spacing.lg, right: Spacing.lg,
+  },
   fab: {
-    position: 'absolute', bottom: 28, right: 20,
     width: 56, height: 56, borderRadius: 28,
     backgroundColor: Colors.warning, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35, shadowRadius: 10, elevation: 10,
   },
-  fabText: { fontSize: 28, fontWeight: '600', color: Colors.background },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  fabText: { fontSize: 28, fontWeight: '400', color: Colors.background },
+
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   modalContent: {
-    backgroundColor: Colors.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, paddingBottom: 40,
+    backgroundColor: Colors.surfaceElevated,
+    borderTopLeftRadius: Radius.xl + 4, borderTopRightRadius: Radius.xl + 4,
+    padding: Spacing.lg, paddingBottom: Spacing.xxl,
   },
   modalHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border,
-    alignSelf: 'center', marginBottom: 16,
+    width: Spacing.xxl, height: 5, borderRadius: 3, backgroundColor: Colors.border,
+    alignSelf: 'center', marginBottom: Spacing.lg,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20 },
-  inputLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
+  modalTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
+  inputLabel: { fontSize: FontSize.small, color: Colors.textSecondary, marginBottom: Spacing.sm },
   input: {
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    fontSize: 16, color: Colors.textPrimary, marginBottom: 16,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, fontSize: FontSize.body, color: Colors.textPrimary,
+    marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48,
   },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
   categoryChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.pill,
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 36,
   },
   categoryChipActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
-  categoryChipText: { fontSize: 13, color: Colors.textSecondary },
+  categoryChipText: { fontSize: FontSize.small, color: Colors.textSecondary },
   categoryChipTextActive: { color: Colors.primary, fontWeight: '600' },
-  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalButtons: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: {
-    flex: 1, padding: 14, borderRadius: 12, alignItems: 'center',
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center',
     borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48, justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: 16, fontWeight: '600', color: Colors.textSecondary },
+  cancelBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textSecondary },
   saveBtn: {
-    flex: 1, padding: 14, borderRadius: 12, alignItems: 'center',
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md, alignItems: 'center',
     backgroundColor: Colors.primary,
+    minHeight: 48, justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: 16, fontWeight: '600', color: Colors.background },
+  saveBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.background },
 });

@@ -4,7 +4,7 @@ import {
   TextInput, Modal, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { uuid, triggerHaptic } from '../utils/helpers';
 
@@ -89,7 +89,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.body }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -217,9 +217,9 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
-  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  headerSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
-  sectionTitle: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
+  title: HeaderStyle.title,
+  headerSubtitle: { ...HeaderStyle.subtitle, marginBottom: Spacing.lg },
+  sectionTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
   sectionSubtitle: { fontSize: FontSize.small, color: Colors.textSecondary, marginBottom: Spacing.md },
   emptyRules: {
     ...CardStyle,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     minHeight: 56,
   },
-  ruleText: { flex: 1, fontSize: FontSize.bodyLarge, color: Colors.textPrimary, marginLeft: Spacing.md },
+  ruleText: { flex: 1, fontSize: FontSize.body, color: Colors.textPrimary, marginLeft: Spacing.md },
   ruleTextInactive: { color: Colors.textDisabled, textDecorationLine: 'line-through' },
   reorderBtns: { flexDirection: 'row', gap: Spacing.xs },
   reorderBtn: {
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     ...CardStyle,
     padding: Spacing.lg, marginTop: Spacing.sm,
   },
-  aboutName: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary },
+  aboutName: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary },
   aboutVersion: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: 2 },
   aboutDesc: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: Spacing.md, lineHeight: 22 },
   dangerBtn: {
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md, borderWidth: 1, borderColor: Colors.error, marginTop: Spacing.sm,
     minHeight: 56, justifyContent: 'center',
   },
-  dangerBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.error },
+  dangerBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.error },
   dangerBtnSub: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, marginTop: 2 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   modalContent: {
@@ -284,10 +284,10 @@ const styles = StyleSheet.create({
     width: 40, height: 5, borderRadius: 3, backgroundColor: Colors.border,
     alignSelf: 'center', marginBottom: Spacing.md,
   },
-  modalTitle: { fontSize: FontSize.title - 4, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
+  modalTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
   input: {
     backgroundColor: Colors.surface, borderRadius: Radius.md,
-    padding: Spacing.md, fontSize: FontSize.bodyLarge, color: Colors.textPrimary,
+    padding: Spacing.md, fontSize: FontSize.body, color: Colors.textPrimary,
     marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border,
     minHeight: 48,
   },
@@ -297,12 +297,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
     minHeight: 48, justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textSecondary },
+  cancelBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textSecondary },
   saveBtn: {
     flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
     alignItems: 'center', backgroundColor: Colors.primary,
     minHeight: 48, justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.background },
+  saveBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.background },
 });

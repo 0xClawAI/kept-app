@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle, HeaderStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import {
   getDateKey, getDaysInMonth, getFirstDayOfMonth,
@@ -90,7 +90,7 @@ export default function CalendarScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.body }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -284,8 +284,8 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: GRID_PADDING, paddingBottom: Spacing.xxl },
-  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  subtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
+  title: HeaderStyle.title,
+  subtitle: { ...HeaderStyle.subtitle, marginBottom: Spacing.lg },
   streakRow: {
     ...CardStyle,
     flexDirection: 'row',
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   navBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   navBtnText: { fontSize: 28, color: Colors.textPrimary, fontWeight: '300' },
-  monthLabel: { fontSize: FontSize.subtitle, fontWeight: '600', color: Colors.textPrimary },
+  monthLabel: { fontSize: FontSize.section, fontWeight: '600', color: Colors.textPrimary },
   dayHeaders: { flexDirection: 'row', marginBottom: Spacing.sm, gap: GAP },
   dayHeaderCell: { width: CELL_SIZE, alignItems: 'center' },
   dayHeaderText: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, fontWeight: '600' },
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     width: 40, height: 5, borderRadius: 3, backgroundColor: Colors.border,
     alignSelf: 'center', marginBottom: Spacing.md,
   },
-  modalTitle: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
+  modalTitle: { fontSize: FontSize.section, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
   dayStatusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
   dayStatusLabel: { fontSize: FontSize.body, color: Colors.textSecondary, marginRight: Spacing.sm + 2 },
   statusBadge: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm - 2, borderRadius: Radius.sm },
@@ -370,5 +370,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', backgroundColor: Colors.primary, minHeight: 48,
     justifyContent: 'center',
   },
-  closeBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.background },
+  closeBtnText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.background },
 });
