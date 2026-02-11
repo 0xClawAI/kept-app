@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Modal, TextInput, Alert, LayoutAnimation, Platform, UIManager,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { triggerHaptic, formatCurrency, uuid, getDateKey } from '../utils/helpers';
 
@@ -15,14 +15,35 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const CATEGORIES = ['Food & Drink', 'Shopping', 'Entertainment', 'Clothing', 'Tech', 'Home', 'Other'];
 const CATEGORY_EMOJI = {
-  'Food & Drink': '☕',
-  'Shopping': '🛒',
-  'Entertainment': '🎬',
-  'Clothing': '👗',
-  'Tech': '📱',
-  'Home': '🏠',
-  'Other': '📦',
+  'Food & Drink': '☕', 'Shopping': '🛒', 'Entertainment': '🎬',
+  'Clothing': '👗', 'Tech': '📱', 'Home': '🏠', 'Other': '📦',
 };
+
+// Animated FAB with scale on press
+function FAB({ onPress, color = Colors.primary }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, friction: 5 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 3 }).start();
+  };
+
+  return (
+    <Animated.View style={[styles.fabWrap, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: color }]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 // ─── TAB: Didn't Buy It ─────────────────────────────
 function DidntBuyTab() {
@@ -36,62 +57,46 @@ function DidntBuyTab() {
   const total = didntBuyItems.reduce((s, i) => s + (i.price || 0), 0);
 
   const openAdd = () => {
-    setEditingItem(null);
-    setItemName('');
-    setItemPrice('');
-    setItemCategory('Other');
+    setEditingItem(null); setItemName(''); setItemPrice(''); setItemCategory('Other');
     setShowModal(true);
   };
 
   const openEdit = (item) => {
-    setEditingItem(item);
-    setItemName(item.name);
-    setItemPrice(String(item.price));
-    setItemCategory(item.category || 'Other');
+    setEditingItem(item); setItemName(item.name);
+    setItemPrice(String(item.price)); setItemCategory(item.category || 'Other');
     setShowModal(true);
   };
 
   const saveItem = () => {
     if (!itemName.trim()) return;
     const price = parseFloat(itemPrice) || 0;
-
     if (editingItem) {
-      const updated = didntBuyItems.map(i =>
-        i.id === editingItem.id
-          ? { ...i, name: itemName.trim(), price, category: itemCategory }
-          : i
-      );
-      updateDidntBuyItems(updated);
+      updateDidntBuyItems(didntBuyItems.map(i =>
+        i.id === editingItem.id ? { ...i, name: itemName.trim(), price, category: itemCategory } : i
+      ));
     } else {
-      const newItem = {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      updateDidntBuyItems([{
         id: uuid(), name: itemName.trim(), price,
         category: itemCategory, date: getDateKey(new Date()),
-      };
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      updateDidntBuyItems([newItem, ...didntBuyItems]);
+      }, ...didntBuyItems]);
     }
     triggerHaptic('success');
-    setItemName('');
-    setItemPrice('');
-    setItemCategory('Other');
-    setEditingItem(null);
-    setShowModal(false);
+    setItemName(''); setItemPrice(''); setItemCategory('Other');
+    setEditingItem(null); setShowModal(false);
   };
 
   const deleteItem = (id) => {
     Alert.alert('Delete Item', 'Remove this item?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          updateDidntBuyItems(didntBuyItems.filter(i => i.id !== id));
-          triggerHaptic('medium');
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        updateDidntBuyItems(didntBuyItems.filter(i => i.id !== id));
+        triggerHaptic('medium');
+      }},
     ]);
   };
 
-  // Group by date
   const groupedItems = useMemo(() => {
     const groups = {};
     didntBuyItems.forEach(item => {
@@ -121,7 +126,6 @@ function DidntBuyTab() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Total Banner */}
       <View style={styles.totalBanner}>
         <Text style={styles.totalLabel}>Saved by not buying</Text>
         <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
@@ -150,16 +154,13 @@ function DidntBuyTab() {
               </View>
               {groupedItems[date].map(item => (
                 <TouchableOpacity
-                  key={item.id}
-                  style={styles.itemRow}
+                  key={item.id} style={styles.itemRow}
                   onPress={() => openEdit(item)}
                   onLongPress={() => deleteItem(item.id)}
                   activeOpacity={0.7}
                 >
                   <View style={styles.categoryDot}>
-                    <Text style={styles.categoryEmoji}>
-                      {CATEGORY_EMOJI[item.category] || '📦'}
-                    </Text>
+                    <Text style={styles.categoryEmoji}>{CATEGORY_EMOJI[item.category] || '📦'}</Text>
                   </View>
                   <View style={styles.itemInfo}>
                     <Text style={styles.itemName}>{item.name}</Text>
@@ -174,21 +175,10 @@ function DidntBuyTab() {
         </View>
       )}
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => { openAdd(); triggerHaptic('light'); }}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={() => { openAdd(); triggerHaptic('light'); }} />
 
-      {/* Add/Edit Modal */}
       <Modal visible={showModal} transparent animationType="slide">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>
@@ -198,22 +188,8 @@ function DidntBuyTab() {
               {editingItem ? 'Update this item' : 'What did you resist buying?'}
             </Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Item name (e.g., Coffee, Shoes)"
-              placeholderTextColor={Colors.textDisabled}
-              value={itemName}
-              onChangeText={setItemName}
-              autoFocus
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Price ($)"
-              placeholderTextColor={Colors.textDisabled}
-              value={itemPrice}
-              onChangeText={setItemPrice}
-              keyboardType="decimal-pad"
-            />
+            <TextInput style={styles.input} placeholder="Item name (e.g., Coffee, Shoes)" placeholderTextColor={Colors.textDisabled} value={itemName} onChangeText={setItemName} autoFocus />
+            <TextInput style={styles.input} placeholder="Price ($)" placeholderTextColor={Colors.textDisabled} value={itemPrice} onChangeText={setItemPrice} keyboardType="decimal-pad" />
 
             <Text style={styles.categoryLabel}>Category</Text>
             <View style={styles.categoryGrid}>
@@ -221,29 +197,20 @@ function DidntBuyTab() {
                 <TouchableOpacity
                   key={cat}
                   style={[styles.categoryChip, itemCategory === cat && styles.categoryChipActive]}
-                  onPress={() => setItemCategory(cat)}
-                  activeOpacity={0.7}
+                  onPress={() => setItemCategory(cat)} activeOpacity={0.7}
                 >
-                  <Text style={[
-                    styles.categoryChipText,
-                    itemCategory === cat && styles.categoryChipTextActive,
-                  ]}>{CATEGORY_EMOJI[cat]} {cat}</Text>
+                  <Text style={[styles.categoryChipText, itemCategory === cat && styles.categoryChipTextActive]}>
+                    {CATEGORY_EMOJI[cat]} {cat}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => { setShowModal(false); setEditingItem(null); setItemName(''); setItemPrice(''); }}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowModal(false); setEditingItem(null); setItemName(''); setItemPrice(''); }}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveBtn, !itemName.trim() && styles.saveBtnDisabled]}
-                onPress={saveItem}
-                disabled={!itemName.trim()}
-              >
+              <TouchableOpacity style={[styles.saveBtn, !itemName.trim() && styles.saveBtnDisabled]} onPress={saveItem} disabled={!itemName.trim()}>
                 <Text style={styles.saveBtnText}>{editingItem ? 'Update' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
@@ -261,36 +228,23 @@ function RulesTab() {
   const [editingRule, setEditingRule] = useState(null);
   const [ruleText, setRuleText] = useState('');
 
-  const openAdd = () => {
-    setEditingRule(null);
-    setRuleText('');
-    setShowAdd(true);
-  };
-
-  const openEdit = (rule) => {
-    setEditingRule(rule);
-    setRuleText(rule.text);
-    setShowAdd(true);
-  };
+  const openAdd = () => { setEditingRule(null); setRuleText(''); setShowAdd(true); };
+  const openEdit = (rule) => { setEditingRule(rule); setRuleText(rule.text); setShowAdd(true); };
 
   const saveRule = () => {
     if (!ruleText.trim()) return;
     if (editingRule) {
-      updateRules(rules.map(r =>
-        r.id === editingRule.id ? { ...r, text: ruleText.trim() } : r
-      ));
+      updateRules(rules.map(r => r.id === editingRule.id ? { ...r, text: ruleText.trim() } : r));
     } else {
-      const newRule = { id: uuid(), text: ruleText.trim(), active: true };
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      updateRules([...rules, newRule]);
+      updateRules([...rules, { id: uuid(), text: ruleText.trim(), active: true }]);
     }
     triggerHaptic('success');
-    setRuleText('');
-    setEditingRule(null);
-    setShowAdd(false);
+    setRuleText(''); setEditingRule(null); setShowAdd(false);
   };
 
   const toggleRule = (id) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     updateRules(rules.map(r => r.id === id ? { ...r, active: !r.active } : r));
     triggerHaptic('light');
   };
@@ -298,13 +252,11 @@ function RulesTab() {
   const deleteRule = (id) => {
     Alert.alert('Delete Rule', 'Remove this rule?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          updateRules(rules.filter(r => r.id !== id));
-          triggerHaptic('medium');
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        updateRules(rules.filter(r => r.id !== id));
+        triggerHaptic('medium');
+      }},
     ]);
   };
 
@@ -334,11 +286,7 @@ function RulesTab() {
               <Text style={[styles.ruleText, !rule.active && styles.ruleTextInactive]}>
                 {rule.text}
               </Text>
-              <TouchableOpacity
-                onPress={() => openEdit(rule)}
-                style={styles.editBtn}
-                activeOpacity={0.6}
-              >
+              <TouchableOpacity onPress={() => openEdit(rule)} style={styles.editBtn} activeOpacity={0.6}>
                 <Text style={styles.editBtnText}>✏️</Text>
               </TouchableOpacity>
             </TouchableOpacity>
@@ -347,50 +295,24 @@ function RulesTab() {
         </View>
       )}
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: Colors.secondary }]}
-        onPress={() => { openAdd(); triggerHaptic('light'); }}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={() => { openAdd(); triggerHaptic('light'); }} color={Colors.secondary} />
 
-      {/* Add/Edit Modal */}
       <Modal visible={showAdd} transparent animationType="slide">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>
-              {editingRule ? 'Edit Rule' : 'New Rule 📋'}
-            </Text>
-            <Text style={styles.modalSubtitle}>
-              {editingRule ? 'Update this rule' : 'What are you committing to not buy?'}
-            </Text>
+            <Text style={styles.modalTitle}>{editingRule ? 'Edit Rule' : 'New Rule 📋'}</Text>
+            <Text style={styles.modalSubtitle}>{editingRule ? 'Update this rule' : 'What are you committing to not buy?'}</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., No Amazon purchases, No takeout"
-              placeholderTextColor={Colors.textDisabled}
-              value={ruleText}
-              onChangeText={setRuleText}
-              autoFocus
-            />
+            <TextInput style={styles.input} placeholder="e.g., No Amazon purchases, No takeout" placeholderTextColor={Colors.textDisabled} value={ruleText} onChangeText={setRuleText} autoFocus />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => { setShowAdd(false); setRuleText(''); setEditingRule(null); }}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAdd(false); setRuleText(''); setEditingRule(null); }}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveBtn, { backgroundColor: Colors.secondary }, !ruleText.trim() && styles.saveBtnDisabled]}
-                onPress={saveRule}
-                disabled={!ruleText.trim()}
+                onPress={saveRule} disabled={!ruleText.trim()}
               >
                 <Text style={styles.saveBtnText}>{editingRule ? 'Update' : 'Add Rule'}</Text>
               </TouchableOpacity>
@@ -419,9 +341,11 @@ export default function LogScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Log</Text>
+      <View style={styles.screenHeader}>
+        <Text style={styles.title}>Log</Text>
+        <Text style={styles.screenSubtitle}>Track what you didn't buy</Text>
+      </View>
 
-      {/* Tab Switcher */}
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'didntbuy' && styles.tabActive]}
@@ -441,10 +365,7 @@ export default function LogScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {activeTab === 'didntbuy' ? <DidntBuyTab /> : <RulesTab />}
       </ScrollView>
     </SafeAreaView>
@@ -453,89 +374,71 @@ export default function LogScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { paddingHorizontal: 20, paddingBottom: 100, flexGrow: 1 },
-  title: {
-    fontSize: 28, fontWeight: '800', color: Colors.textPrimary,
-    letterSpacing: -0.5, paddingHorizontal: 20, paddingTop: 8,
-  },
+  scroll: { paddingHorizontal: Spacing.lg, paddingBottom: 100, flexGrow: 1 },
+  screenHeader: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.sm },
+  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
+  screenSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: Colors.textSecondary, fontSize: 16 },
+  loadingText: { color: Colors.textSecondary, fontSize: FontSize.bodyLarge },
 
   tabBar: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 4,
+    flexDirection: 'row', marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md, marginBottom: Spacing.lg,
+    backgroundColor: Colors.surface, borderRadius: Radius.md, padding: Spacing.xs,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
+  tab: { flex: 1, paddingVertical: Spacing.sm + 2, borderRadius: Radius.sm + 2, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
   tabActive: { backgroundColor: Colors.primaryMuted },
   tabActiveSecondary: { backgroundColor: 'rgba(129, 140, 248, 0.2)' },
-  tabText: { fontSize: 15, fontWeight: '600', color: Colors.textDisabled },
+  tabText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textDisabled },
   tabTextActive: { color: Colors.primary },
   tabTextActiveSecondary: { color: Colors.secondary },
 
   totalBanner: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 20,
+    ...CardStyle,
+    padding: Spacing.lg,
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
+    marginBottom: Spacing.lg,
     borderColor: Colors.primaryMuted,
   },
-  totalLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
-  totalValue: { fontSize: 36, fontWeight: '800', color: Colors.primary, marginTop: 4 },
-  totalCount: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  totalLabel: { fontSize: FontSize.small + 1, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  totalValue: { fontSize: 36, fontWeight: '800', color: Colors.primary, marginTop: Spacing.xs },
+  totalCount: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.xs },
 
-  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 20 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  emptyText: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl, paddingHorizontal: Spacing.lg },
+  emptyIcon: { fontSize: 48, marginBottom: Spacing.md },
+  emptyTitle: { fontSize: FontSize.title - 4, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
+  emptyText: { fontSize: FontSize.body, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 
   dateHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 8, marginTop: 8,
+    paddingVertical: Spacing.sm, marginTop: Spacing.sm,
   },
-  dateHeaderText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  dateHeaderAmount: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  dateHeaderText: { fontSize: FontSize.small + 1, fontWeight: '600', color: Colors.textSecondary },
+  dateHeaderAmount: { fontSize: FontSize.small + 1, fontWeight: '600', color: Colors.primary },
 
-  itemList: { gap: 6 },
+  itemList: { gap: Spacing.sm - 2 },
   itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.md + 2,
+    padding: Spacing.md, minHeight: 64,
   },
   categoryDot: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: Radius.md,
     backgroundColor: Colors.surfaceElevated, alignItems: 'center', justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   categoryEmoji: { fontSize: 18 },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  itemMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  itemDate: { fontSize: 13, color: Colors.textDisabled, marginTop: 2 },
-  itemPrice: { fontSize: 18, fontWeight: '700', color: Colors.primary },
+  itemName: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
+  itemMeta: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, marginTop: 2 },
+  itemPrice: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.primary },
 
-  longPressHint: { fontSize: 12, color: Colors.textDisabled, textAlign: 'center', marginTop: 12 },
+  longPressHint: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, textAlign: 'center', marginTop: Spacing.md },
 
   ruleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, gap: Spacing.md, minHeight: 56,
   },
   ruleRowInactive: { opacity: 0.5 },
   ruleCheck: {
@@ -545,81 +448,63 @@ const styles = StyleSheet.create({
   },
   ruleCheckActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   ruleCheckText: { fontSize: 14, color: '#fff', fontWeight: '700' },
-  ruleText: { flex: 1, fontSize: 16, fontWeight: '500', color: Colors.textPrimary },
+  ruleText: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '500', color: Colors.textPrimary },
   ruleTextInactive: { textDecorationLine: 'line-through', color: Colors.textDisabled },
-  editBtn: { padding: 4 },
+  editBtn: { padding: Spacing.sm, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   editBtnText: { fontSize: 16 },
 
+  fabWrap: {
+    position: 'absolute', bottom: Spacing.lg, right: 0,
+  },
   fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 0,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35, shadowRadius: 10, elevation: 10,
   },
   fabText: { fontSize: 28, fontWeight: '400', color: '#000' },
 
-  categoryLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 8 },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  categoryLabel: { fontSize: FontSize.small, color: Colors.textSecondary, marginBottom: Spacing.sm },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
   categoryChip: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.pill,
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 36,
   },
   categoryChipActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
-  categoryChipText: { fontSize: 12, color: Colors.textSecondary },
+  categoryChipText: { fontSize: FontSize.caption + 1, color: Colors.textSecondary },
   categoryChipTextActive: { color: Colors.primary, fontWeight: '600' },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: {
     backgroundColor: Colors.surfaceElevated,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: Radius.xl + 4, borderTopRightRadius: Radius.xl + 4,
+    padding: Spacing.lg, paddingBottom: Spacing.xxl,
   },
   modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginBottom: 20,
+    width: 40, height: 5, borderRadius: 3,
+    backgroundColor: Colors.border, alignSelf: 'center', marginBottom: Spacing.lg,
   },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  modalSubtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: 20 },
+  modalTitle: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
+  modalSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginBottom: Spacing.lg },
 
   input: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, fontSize: FontSize.bodyLarge, color: Colors.textPrimary,
+    marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48,
   },
 
-  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  modalButtons: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
   cancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    backgroundColor: Colors.surface, alignItems: 'center',
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    backgroundColor: Colors.surface, alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: 16, fontWeight: '600', color: Colors.textSecondary },
+  cancelBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textSecondary },
   saveBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    backgroundColor: Colors.primary, alignItems: 'center',
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    backgroundColor: Colors.primary, alignItems: 'center', minHeight: 48, justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: 16, fontWeight: '600', color: '#000' },
+  saveBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: '#000' },
 });

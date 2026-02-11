@@ -1,12 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch,
-  TextInput, Modal,
+  TextInput, Modal, LayoutAnimation, Platform, UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { uuid, triggerHaptic } from '../utils/helpers';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function SettingsScreen() {
   const {
@@ -22,51 +26,35 @@ export default function SettingsScreen() {
   const [editingRule, setEditingRule] = useState(null);
   const [newRuleText, setNewRuleText] = useState('');
 
-  const openAddRule = () => {
-    setEditingRule(null);
-    setNewRuleText('');
-    setRuleModalVisible(true);
-  };
-
-  const openEditRule = (rule) => {
-    setEditingRule(rule);
-    setNewRuleText(rule.text);
-    setRuleModalVisible(true);
-  };
+  const openAddRule = () => { setEditingRule(null); setNewRuleText(''); setRuleModalVisible(true); };
+  const openEditRule = (rule) => { setEditingRule(rule); setNewRuleText(rule.text); setRuleModalVisible(true); };
 
   const saveRule = useCallback(() => {
     if (!newRuleText.trim()) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (editingRule) {
-      const updated = rules.map(r =>
-        r.id === editingRule.id ? { ...r, text: newRuleText.trim() } : r
-      );
-      updateRules(updated);
+      updateRules(rules.map(r => r.id === editingRule.id ? { ...r, text: newRuleText.trim() } : r));
     } else {
-      const newRule = { id: uuid(), text: newRuleText.trim(), active: true };
-      updateRules([...rules, newRule]);
+      updateRules([...rules, { id: uuid(), text: newRuleText.trim(), active: true }]);
     }
     triggerHaptic('success');
-    setNewRuleText('');
-    setEditingRule(null);
-    setRuleModalVisible(false);
+    setNewRuleText(''); setEditingRule(null); setRuleModalVisible(false);
   }, [newRuleText, rules, updateRules, editingRule]);
 
   const toggleRule = useCallback((id) => {
-    const updated = rules.map(r => r.id === id ? { ...r, active: !r.active } : r);
-    updateRules(updated);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    updateRules(rules.map(r => r.id === id ? { ...r, active: !r.active } : r));
     triggerHaptic('light');
   }, [rules, updateRules]);
 
   const deleteRule = useCallback((id) => {
     Alert.alert('Delete Rule', 'Remove this rule?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: () => {
-          updateRules(rules.filter(r => r.id !== id));
-          triggerHaptic('light');
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        updateRules(rules.filter(r => r.id !== id));
+        triggerHaptic('light');
+      }},
     ]);
   }, [rules, updateRules]);
 
@@ -75,6 +63,7 @@ export default function SettingsScreen() {
     if (idx < 0) return;
     const newIdx = idx + direction;
     if (newIdx < 0 || newIdx >= rules.length) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const updated = [...rules];
     [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
     updateRules(updated);
@@ -87,18 +76,11 @@ export default function SettingsScreen() {
       'This will permanently delete ALL your progress. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Everything',
-          style: 'destructive',
-          onPress: () => {
-            updateNoSpendDays({});
-            updateEnvelopes([]);
-            updateWeeks([]);
-            updateDidntBuyItems([]);
-            updateRules([]);
-            triggerHaptic('success');
-          },
-        },
+        { text: 'Delete Everything', style: 'destructive', onPress: () => {
+          updateNoSpendDays({}); updateEnvelopes([]); updateWeeks([]);
+          updateDidntBuyItems([]); updateRules([]);
+          triggerHaptic('success');
+        }},
       ]
     );
   };
@@ -107,7 +89,7 @@ export default function SettingsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -117,6 +99,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Settings</Text>
+        <Text style={styles.headerSubtitle}>Manage your rules and data</Text>
 
         {/* No-Buy Rules Section */}
         <Text style={styles.sectionTitle}>My No-Buy Rules</Text>
@@ -130,8 +113,7 @@ export default function SettingsScreen() {
         ) : (
           rules.map((rule, idx) => (
             <TouchableOpacity
-              key={rule.id}
-              style={styles.ruleRow}
+              key={rule.id} style={styles.ruleRow}
               onPress={() => openEditRule(rule)}
               onLongPress={() => deleteRule(rule.id)}
               activeOpacity={0.7}
@@ -161,41 +143,29 @@ export default function SettingsScreen() {
           ))
         )}
 
-        <TouchableOpacity
-          style={styles.addRuleBtn}
-          onPress={openAddRule}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.addRuleBtn} onPress={openAddRule} activeOpacity={0.7}>
           <Text style={styles.addRuleBtnText}>+ Add Rule</Text>
         </TouchableOpacity>
 
         {/* Quick Stats */}
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Quick Stats</Text>
+        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>Quick Stats</Text>
         <View style={styles.statsCard}>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Days tracked</Text>
-            <Text style={styles.statValue}>{Object.keys(noSpendDays).length}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Envelopes stuffed</Text>
-            <Text style={styles.statValue}>{envelopes.length}/100</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Weeks completed</Text>
-            <Text style={styles.statValue}>{weeks.length}/52</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Items resisted</Text>
-            <Text style={styles.statValue}>{didntBuyItems.length}</Text>
-          </View>
-          <View style={[styles.statRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.statLabel}>Active rules</Text>
-            <Text style={styles.statValue}>{rules.filter(r => r.active).length}</Text>
-          </View>
+          {[
+            { label: 'Days tracked', value: Object.keys(noSpendDays).length },
+            { label: 'Envelopes stuffed', value: `${envelopes.length}/100` },
+            { label: 'Weeks completed', value: `${weeks.length}/52` },
+            { label: 'Items resisted', value: didntBuyItems.length },
+            { label: 'Active rules', value: rules.filter(r => r.active).length, last: true },
+          ].map((stat, i) => (
+            <View key={i} style={[styles.statRow, stat.last && { borderBottomWidth: 0 }]}>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={styles.statValue}>{stat.value}</Text>
+            </View>
+          ))}
         </View>
 
         {/* About */}
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>About</Text>
+        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>About</Text>
         <View style={styles.aboutCard}>
           <Text style={styles.aboutName}>💚 Kept</Text>
           <Text style={styles.aboutVersion}>Version 1.0.0</Text>
@@ -205,13 +175,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Danger Zone */}
-        <Text style={[styles.sectionTitle, { marginTop: 32, color: Colors.error }]}>Danger Zone</Text>
+        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl, color: Colors.error }]}>Danger Zone</Text>
         <TouchableOpacity style={styles.dangerBtn} onPress={resetAllData} activeOpacity={0.7}>
           <Text style={styles.dangerBtnText}>Reset All Data</Text>
           <Text style={styles.dangerBtnSub}>Permanently delete all progress</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: Spacing.xxl }} />
       </ScrollView>
 
       {/* Add/Edit Rule Modal */}
@@ -223,26 +193,17 @@ export default function SettingsScreen() {
               {editingRule ? 'Edit Rule' : 'Add No-Buy Rule'}
             </Text>
             <TextInput
-              style={styles.input}
-              value={newRuleText}
-              onChangeText={setNewRuleText}
-              placeholder="e.g. No Amazon purchases"
-              placeholderTextColor={Colors.textDisabled}
-              autoFocus
+              style={styles.input} value={newRuleText} onChangeText={setNewRuleText}
+              placeholder="e.g. No Amazon purchases" placeholderTextColor={Colors.textDisabled} autoFocus
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => { setRuleModalVisible(false); setNewRuleText(''); setEditingRule(null); }}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.cancelBtn}
+                onPress={() => { setRuleModalVisible(false); setNewRuleText(''); setEditingRule(null); }} activeOpacity={0.7}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveBtn, !newRuleText.trim() && styles.saveBtnDisabled]}
-                onPress={saveRule}
-                activeOpacity={0.7}
-              >
+                onPress={saveRule} activeOpacity={0.7}>
                 <Text style={styles.saveBtnText}>{editingRule ? 'Update' : 'Add'}</Text>
               </TouchableOpacity>
             </View>
@@ -255,83 +216,93 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, letterSpacing: -0.5, marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: Colors.textPrimary, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: 16 },
+  content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
+  headerSubtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
+  sectionTitle: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.xs },
+  sectionSubtitle: { fontSize: FontSize.small, color: Colors.textSecondary, marginBottom: Spacing.md },
   emptyRules: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 24,
-    alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    ...CardStyle,
+    padding: Spacing.lg, alignItems: 'center',
   },
-  emptyEmoji: { fontSize: 32, marginBottom: 8 },
-  emptyText: { color: Colors.textSecondary, fontSize: 14, textAlign: 'center' },
+  emptyEmoji: { fontSize: 32, marginBottom: Spacing.sm },
+  emptyText: { color: Colors.textSecondary, fontSize: FontSize.small + 1, textAlign: 'center' },
   ruleRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 6, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md + 2,
+    padding: Spacing.md, marginBottom: Spacing.sm - 2,
+    borderWidth: 1, borderColor: Colors.border,
+    minHeight: 56,
   },
-  ruleText: { flex: 1, fontSize: 16, color: Colors.textPrimary, marginLeft: 12 },
+  ruleText: { flex: 1, fontSize: FontSize.bodyLarge, color: Colors.textPrimary, marginLeft: Spacing.md },
   ruleTextInactive: { color: Colors.textDisabled, textDecorationLine: 'line-through' },
-  reorderBtns: { flexDirection: 'row', gap: 4 },
+  reorderBtns: { flexDirection: 'row', gap: Spacing.xs },
   reorderBtn: {
-    width: 28, height: 28, borderRadius: 8,
+    width: 32, height: 32, borderRadius: Radius.sm,
     backgroundColor: Colors.surfaceElevated, alignItems: 'center', justifyContent: 'center',
   },
   reorderBtnText: { fontSize: 14, color: Colors.textSecondary },
   addRuleBtn: {
-    marginTop: 12, padding: 14, borderRadius: 12, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.primary, borderStyle: 'dashed',
+    marginTop: Spacing.md, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    alignItems: 'center', borderWidth: 1, borderColor: Colors.primary, borderStyle: 'dashed',
+    minHeight: 48, justifyContent: 'center',
   },
-  addRuleBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
+  addRuleBtnText: { color: Colors.primary, fontWeight: '600', fontSize: FontSize.small + 1 },
   statsCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 4,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 8,
+    ...CardStyle,
+    padding: Spacing.xs, marginTop: Spacing.sm,
   },
   statRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 14, paddingHorizontal: 16,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
+    minHeight: 48,
   },
-  statLabel: { fontSize: 15, color: Colors.textSecondary },
-  statValue: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
+  statLabel: { fontSize: FontSize.body, color: Colors.textSecondary },
+  statValue: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
   aboutCard: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 20,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 8,
+    ...CardStyle,
+    padding: Spacing.lg, marginTop: Spacing.sm,
   },
-  aboutName: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
-  aboutVersion: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  aboutDesc: { fontSize: 14, color: Colors.textSecondary, marginTop: 12, lineHeight: 22 },
+  aboutName: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary },
+  aboutVersion: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: 2 },
+  aboutDesc: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: Spacing.md, lineHeight: 22 },
   dangerBtn: {
-    backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: Colors.error, marginTop: 8,
+    backgroundColor: 'rgba(239,68,68,0.1)', borderRadius: Radius.md + 2,
+    padding: Spacing.md, borderWidth: 1, borderColor: Colors.error, marginTop: Spacing.sm,
+    minHeight: 56, justifyContent: 'center',
   },
-  dangerBtnText: { fontSize: 16, fontWeight: '600', color: Colors.error },
-  dangerBtnSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  dangerBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.error },
+  dangerBtnSub: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, marginTop: 2 },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   modalContent: {
-    backgroundColor: Colors.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, paddingBottom: 40,
+    backgroundColor: Colors.surfaceElevated,
+    borderTopLeftRadius: Radius.xl + 4, borderTopRightRadius: Radius.xl + 4,
+    padding: Spacing.lg, paddingBottom: Spacing.xxl,
   },
   modalHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border,
-    alignSelf: 'center', marginBottom: 16,
+    width: 40, height: 5, borderRadius: 3, backgroundColor: Colors.border,
+    alignSelf: 'center', marginBottom: Spacing.md,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20 },
+  modalTitle: { fontSize: FontSize.title - 4, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
   input: {
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    fontSize: 16, color: Colors.textPrimary, marginBottom: 20,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, fontSize: FontSize.bodyLarge, color: Colors.textPrimary,
+    marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48,
   },
-  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalButtons: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: {
-    flex: 1, padding: 14, borderRadius: 12, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border,
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    minHeight: 48, justifyContent: 'center',
   },
-  cancelBtnText: { fontSize: 16, fontWeight: '600', color: Colors.textSecondary },
+  cancelBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textSecondary },
   saveBtn: {
-    flex: 1, padding: 14, borderRadius: 12, alignItems: 'center',
-    backgroundColor: Colors.primary,
+    flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    alignItems: 'center', backgroundColor: Colors.primary,
+    minHeight: 48, justifyContent: 'center',
   },
   saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { fontSize: 16, fontWeight: '600', color: Colors.background },
+  saveBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.background },
 });

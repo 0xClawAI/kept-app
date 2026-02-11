@@ -1,10 +1,10 @@
 import React from 'react';
-import { Text, StatusBar } from 'react-native';
+import { Text, StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/context/DataContext';
-import { Colors } from './src/utils/colors';
+import { Colors, Spacing } from './src/utils/colors';
 
 import HomeScreen from './src/screens/HomeScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
@@ -14,7 +14,14 @@ import SettingsScreen from './src/screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
-const ICONS = { Home: '🏠', Calendar: '📅', Challenges: '🏆', Log: '📝', Settings: '⚙️' };
+// Clean text-based icons instead of emojis — more premium feel
+const TAB_ICONS = {
+  Home:       { active: '◉', inactive: '○' },
+  Calendar:   { active: '▦', inactive: '▤' },
+  Challenges: { active: '⬡', inactive: '⬡' },
+  Log:        { active: '≡', inactive: '≡' },
+  Settings:   { active: '◎', inactive: '◎' },
+};
 
 export default function App() {
   return (
@@ -43,16 +50,35 @@ export default function App() {
                 borderTopWidth: 1,
                 height: 88,
                 paddingBottom: 28,
-                paddingTop: 10,
+                paddingTop: Spacing.sm,
               },
               tabBarActiveTintColor: Colors.primary,
               tabBarInactiveTintColor: Colors.textDisabled,
-              tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-              tabBarIcon: ({ focused }) => (
-                <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>
-                  {ICONS[route.name]}
-                </Text>
-              ),
+              tabBarLabelStyle: {
+                fontSize: 11,
+                fontWeight: '600',
+                letterSpacing: 0.3,
+                marginTop: 2,
+              },
+              tabBarIcon: ({ focused }) => {
+                const icon = TAB_ICONS[route.name];
+                return (
+                  <View style={{
+                    width: 44,
+                    height: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text style={{
+                      fontSize: 20,
+                      color: focused ? Colors.primary : Colors.textDisabled,
+                      fontWeight: focused ? '700' : '400',
+                    }}>
+                      {focused ? icon.active : icon.inactive}
+                    </Text>
+                  </View>
+                );
+              },
             })}
           >
             <Tab.Screen name="Home" component={HomeScreen} />

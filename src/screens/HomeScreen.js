@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import Confetti from '../components/Confetti';
 import {
@@ -22,6 +22,16 @@ function StatCard({ label, value, subtitle, color, icon }) {
 
 function ChallengeProgress({ title, current, total, color, icon }) {
   const pct = total > 0 ? Math.min(current / total, 1) : 0;
+  const widthAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(widthAnim, {
+      toValue: pct * 100,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [pct]);
+
   return (
     <View style={styles.progressCard}>
       <View style={styles.progressHeader}>
@@ -30,7 +40,13 @@ function ChallengeProgress({ title, current, total, color, icon }) {
         <Text style={[styles.progressPct, { color }]}>{Math.round(pct * 100)}%</Text>
       </View>
       <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+        <Animated.View style={[styles.progressBarFill, {
+          width: widthAnim.interpolate({
+            inputRange: [0, 100],
+            outputRange: ['0%', '100%'],
+          }),
+          backgroundColor: color,
+        }]} />
       </View>
       <Text style={styles.progressSubtext}>
         {formatCurrency(current)} of {formatCurrency(total)}
@@ -59,7 +75,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (stats.totalSaved > prevTotalRef.current && stats.totalSaved > 0) {
-      // Check milestones
       const milestones = [100, 500, 1000, 2500, 5050];
       for (const m of milestones) {
         if (prevTotalRef.current < m && stats.totalSaved >= m) {
@@ -120,54 +135,18 @@ export default function HomeScreen() {
 
             {/* Stats Grid */}
             <View style={styles.statsGrid}>
-              <StatCard
-                label="Current Streak"
-                value={`${stats.streak}`}
-                subtitle="days"
-                color={Colors.streakFire}
-                icon="🔥"
-              />
-              <StatCard
-                label="Longest Streak"
-                value={`${stats.longest}`}
-                subtitle="days"
-                color={Colors.warning}
-                icon="🏆"
-              />
-              <StatCard
-                label="No-Spend Days"
-                value={`${stats.noSpendCount}`}
-                subtitle="total"
-                color={Colors.primary}
-                icon="📅"
-              />
-              <StatCard
-                label="Items Resisted"
-                value={`${didntBuyItems.length}`}
-                subtitle={formatCurrency(stats.dbiTotal) + ' saved'}
-                color={Colors.secondary}
-                icon="🛡️"
-              />
+              <StatCard label="Current Streak" value={`${stats.streak}`} subtitle="days" color={Colors.streakFire} icon="🔥" />
+              <StatCard label="Longest Streak" value={`${stats.longest}`} subtitle="days" color={Colors.warning} icon="🏆" />
+              <StatCard label="No-Spend Days" value={`${stats.noSpendCount}`} subtitle="total" color={Colors.primary} icon="📅" />
+              <StatCard label="Items Resisted" value={`${didntBuyItems.length}`} subtitle={formatCurrency(stats.dbiTotal) + ' saved'} color={Colors.secondary} icon="🛡️" />
             </View>
 
             {/* Challenge Progress */}
             {envelopes.length > 0 && (
-              <ChallengeProgress
-                title="100 Envelope Challenge"
-                current={stats.envTotal}
-                total={5050}
-                color={Colors.primary}
-                icon="✉️"
-              />
+              <ChallengeProgress title="100 Envelope Challenge" current={stats.envTotal} total={5050} color={Colors.primary} icon="✉️" />
             )}
             {weeks.length > 0 && (
-              <ChallengeProgress
-                title="52-Week Challenge"
-                current={stats.weekTotal}
-                total={1378}
-                color={Colors.secondary}
-                icon="📊"
-              />
+              <ChallengeProgress title="52-Week Challenge" current={stats.weekTotal} total={1378} color={Colors.secondary} icon="📊" />
             )}
           </>
         )}
@@ -178,74 +157,69 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: Colors.textSecondary, fontSize: 16 },
+  loadingText: { color: Colors.textSecondary, fontSize: FontSize.bodyLarge },
 
-  header: { marginBottom: 24 },
-  headerTitle: { fontSize: 32, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
-  headerSubtitle: { fontSize: 16, color: Colors.textSecondary, marginTop: 4 },
+  header: { marginBottom: Spacing.lg },
+  headerTitle: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
+  headerSubtitle: { fontSize: FontSize.bodyLarge, color: Colors.textSecondary, marginTop: Spacing.xs },
 
   heroCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    padding: 28,
+    ...CardStyle,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg + Spacing.xs,
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
+    marginBottom: Spacing.lg,
     borderColor: Colors.primaryMuted,
   },
-  heroLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5 },
-  heroValue: { fontSize: 48, fontWeight: '800', color: Colors.primary, marginTop: 8, letterSpacing: -1 },
+  heroLabel: { fontSize: FontSize.small, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.5 },
+  heroValue: { fontSize: FontSize.display, fontWeight: '800', color: Colors.primary, marginTop: Spacing.sm, letterSpacing: -1 },
   todayBadge: {
-    marginTop: 12,
+    marginTop: Spacing.md,
     backgroundColor: Colors.primaryMuted,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm - 2,
+    borderRadius: Radius.pill,
   },
-  todayBadgeText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+  todayBadgeText: { color: Colors.primary, fontSize: FontSize.small + 1, fontWeight: '600' },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.lg },
   statCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
+    ...CardStyle,
     width: '47%',
     flexGrow: 1,
     borderLeftWidth: 3,
   },
-  statIcon: { fontSize: 20, marginBottom: 8 },
-  statValue: { fontSize: 32, fontWeight: '700' },
-  statLabel: { fontSize: 13, color: Colors.textSecondary, marginTop: 4, fontWeight: '500' },
-  statSubtitle: { fontSize: 12, color: Colors.textDisabled, marginTop: 2 },
+  statIcon: { fontSize: 20, marginBottom: Spacing.sm },
+  statValue: { fontSize: FontSize.hero, fontWeight: '700' },
+  statLabel: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.xs, fontWeight: '500' },
+  statSubtitle: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, marginTop: 2 },
 
   progressCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    ...CardStyle,
+    marginBottom: Spacing.md,
   },
-  progressHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  progressIcon: { fontSize: 18, marginRight: 8 },
-  progressTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
-  progressPct: { fontSize: 16, fontWeight: '700' },
+  progressHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+  progressIcon: { fontSize: 18, marginRight: Spacing.sm },
+  progressTitle: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
+  progressPct: { fontSize: FontSize.bodyLarge, fontWeight: '700' },
   progressBarBg: {
     height: 8,
     backgroundColor: Colors.border,
-    borderRadius: 4,
+    borderRadius: Spacing.xs,
     overflow: 'hidden',
   },
-  progressBarFill: { height: 8, borderRadius: 4 },
-  progressSubtext: { fontSize: 13, color: Colors.textSecondary, marginTop: 8 },
+  progressBarFill: { height: 8, borderRadius: Spacing.xs },
+  progressSubtext: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.sm },
 
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingVertical: Spacing.xxxl + Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
-  emptyIcon: { fontSize: 64, marginBottom: 20 },
-  emptyTitle: { fontSize: 24, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 16 },
-  emptyHint: { fontSize: 14, color: Colors.primary, textAlign: 'center', fontWeight: '600' },
+  emptyIcon: { fontSize: 64, marginBottom: Spacing.lg },
+  emptyTitle: { fontSize: FontSize.title, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
+  emptyText: { fontSize: FontSize.bodyLarge, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: Spacing.md },
+  emptyHint: { fontSize: FontSize.small + 1, color: Colors.primary, textAlign: 'center', fontWeight: '600' },
 });

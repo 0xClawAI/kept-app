@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import {
   getDateKey, getDaysInMonth, getFirstDayOfMonth,
@@ -11,7 +11,7 @@ import {
 } from '../utils/helpers';
 
 const { width } = Dimensions.get('window');
-const GRID_PADDING = 20;
+const GRID_PADDING = Spacing.lg;
 const GAP = 6;
 const CELL_SIZE = Math.floor((width - GRID_PADDING * 2 - 6 * GAP) / 7);
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -84,14 +84,13 @@ export default function CalendarScreen() {
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  // Day detail items
   const selectedDayItems = selectedDay ? didntBuyItems.filter(i => i.date === selectedDay.key) : [];
 
   if (!loaded) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -100,7 +99,8 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>No-Spend Calendar</Text>
+        <Text style={styles.title}>Calendar</Text>
+        <Text style={styles.subtitle}>Track your no-spend days</Text>
 
         {/* Streak bar */}
         <View style={styles.streakRow}>
@@ -230,43 +230,32 @@ export default function CalendarScreen() {
                   )}
                 </View>
 
-                {/* Change status buttons */}
                 <Text style={styles.dayActionLabel}>Change status:</Text>
                 <View style={styles.dayActions}>
-                  <TouchableOpacity
-                    style={[styles.dayActionBtn, noSpendDays[selectedDay.key] === 'no-spend' && styles.dayActionBtnActive]}
-                    onPress={() => {
-                      const updated = { ...noSpendDays, [selectedDay.key]: 'no-spend' };
-                      updateNoSpendDays(updated);
-                      triggerHaptic('success');
-                    }}
-                  >
-                    <Text style={styles.dayActionEmoji}>✅</Text>
-                    <Text style={styles.dayActionText}>No-Spend</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.dayActionBtn, noSpendDays[selectedDay.key] === 'spend' && styles.dayActionBtnSpend]}
-                    onPress={() => {
-                      const updated = { ...noSpendDays, [selectedDay.key]: 'spend' };
-                      updateNoSpendDays(updated);
-                      triggerHaptic('light');
-                    }}
-                  >
-                    <Text style={styles.dayActionEmoji}>💸</Text>
-                    <Text style={styles.dayActionText}>Spend</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.dayActionBtn}
-                    onPress={() => {
-                      const updated = { ...noSpendDays };
-                      delete updated[selectedDay.key];
-                      updateNoSpendDays(updated);
-                      triggerHaptic('light');
-                    }}
-                  >
-                    <Text style={styles.dayActionEmoji}>⬜</Text>
-                    <Text style={styles.dayActionText}>Clear</Text>
-                  </TouchableOpacity>
+                  {[
+                    { key: 'no-spend', emoji: '✅', label: 'No-Spend', haptic: 'success' },
+                    { key: 'spend', emoji: '💸', label: 'Spend', haptic: 'light' },
+                    { key: 'clear', emoji: '⬜', label: 'Clear', haptic: 'light' },
+                  ].map(action => (
+                    <TouchableOpacity
+                      key={action.key}
+                      style={[
+                        styles.dayActionBtn,
+                        noSpendDays[selectedDay.key] === action.key && action.key === 'no-spend' && styles.dayActionBtnActive,
+                        noSpendDays[selectedDay.key] === action.key && action.key === 'spend' && styles.dayActionBtnSpend,
+                      ]}
+                      onPress={() => {
+                        const updated = { ...noSpendDays };
+                        if (action.key === 'clear') delete updated[selectedDay.key];
+                        else updated[selectedDay.key] = action.key;
+                        updateNoSpendDays(updated);
+                        triggerHaptic(action.haptic);
+                      }}
+                    >
+                      <Text style={styles.dayActionEmoji}>{action.emoji}</Text>
+                      <Text style={styles.dayActionText}>{action.label}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
 
                 {selectedDayItems.length > 0 && (
@@ -282,11 +271,7 @@ export default function CalendarScreen() {
                 )}
               </>
             )}
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={() => setSelectedDay(null)}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedDay(null)} activeOpacity={0.7}>
               <Text style={styles.closeBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -298,30 +283,33 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: GRID_PADDING, paddingBottom: 40 },
-  title: { fontSize: 28, fontWeight: '700', color: Colors.textPrimary, letterSpacing: -0.5, marginBottom: 16 },
+  content: { padding: GRID_PADDING, paddingBottom: Spacing.xxl },
+  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
+  subtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
   streakRow: {
-    flexDirection: 'row', backgroundColor: Colors.surface,
-    borderRadius: 16, padding: 16, marginBottom: 24,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
+    ...CardStyle,
+    flexDirection: 'row',
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    alignItems: 'center',
   },
   streakItem: { flex: 1, alignItems: 'center' },
-  streakValue: { fontSize: 24, fontWeight: '700', color: Colors.streakFire },
-  streakLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
-  streakDivider: { width: 1, height: 32, backgroundColor: Colors.border },
+  streakValue: { fontSize: FontSize.title, fontWeight: '700', color: Colors.streakFire },
+  streakLabel: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, marginTop: Spacing.xs },
+  streakDivider: { width: 1, height: Spacing.xl, backgroundColor: Colors.border },
   monthNav: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md,
   },
-  navBtn: { padding: 8, paddingHorizontal: 12 },
+  navBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   navBtnText: { fontSize: 28, color: Colors.textPrimary, fontWeight: '300' },
-  monthLabel: { fontSize: 18, fontWeight: '600', color: Colors.textPrimary },
-  dayHeaders: { flexDirection: 'row', marginBottom: 8, gap: GAP },
+  monthLabel: { fontSize: FontSize.subtitle, fontWeight: '600', color: Colors.textPrimary },
+  dayHeaders: { flexDirection: 'row', marginBottom: Spacing.sm, gap: GAP },
   dayHeaderCell: { width: CELL_SIZE, alignItems: 'center' },
-  dayHeaderText: { fontSize: 12, color: Colors.textDisabled, fontWeight: '600' },
+  dayHeaderText: { fontSize: FontSize.caption + 1, color: Colors.textDisabled, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
   cell: {
     width: CELL_SIZE, height: CELL_SIZE,
-    borderRadius: 10, backgroundColor: Colors.surface,
+    borderRadius: Radius.sm + 2, backgroundColor: Colors.surface,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,
   },
@@ -329,7 +317,7 @@ const styles = StyleSheet.create({
   cellSpend: { backgroundColor: 'rgba(239,68,68,0.15)', borderColor: Colors.error },
   cellToday: { borderColor: Colors.secondary, borderWidth: 2 },
   cellFuture: { opacity: 0.3 },
-  cellText: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
+  cellText: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary },
   cellTextNoSpend: { color: Colors.primary },
   cellTextSpend: { color: Colors.error },
   cellTextFuture: { color: Colors.textDisabled },
@@ -338,46 +326,49 @@ const styles = StyleSheet.create({
     width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.error,
     position: 'absolute', bottom: 5,
   },
-  legend: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, gap: 20 },
+  legend: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.lg, gap: Spacing.lg },
   legendItem: { flexDirection: 'row', alignItems: 'center' },
-  legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: 6 },
-  legendText: { fontSize: 12, color: Colors.textSecondary },
-  hint: { textAlign: 'center', fontSize: 12, color: Colors.textDisabled, marginTop: 12, lineHeight: 18 },
+  legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: Spacing.sm - 2 },
+  legendText: { fontSize: FontSize.caption + 1, color: Colors.textSecondary },
+  hint: { textAlign: 'center', fontSize: FontSize.caption + 1, color: Colors.textDisabled, marginTop: Spacing.md, lineHeight: 18 },
   // Modal
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
   modalContent: {
-    backgroundColor: Colors.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, paddingBottom: 40,
+    backgroundColor: Colors.surfaceElevated, borderTopLeftRadius: Radius.xl + 4, borderTopRightRadius: Radius.xl + 4,
+    padding: Spacing.lg, paddingBottom: Spacing.xxl,
   },
   modalHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border,
-    alignSelf: 'center', marginBottom: 16,
+    width: 40, height: 5, borderRadius: 3, backgroundColor: Colors.border,
+    alignSelf: 'center', marginBottom: Spacing.md,
   },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 16 },
-  dayStatusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  dayStatusLabel: { fontSize: 15, color: Colors.textSecondary, marginRight: 10 },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  statusBadgeText: { fontSize: 14, fontWeight: '600' },
-  dayActionLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 8 },
-  dayActions: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  modalTitle: { fontSize: FontSize.title - 2, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
+  dayStatusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
+  dayStatusLabel: { fontSize: FontSize.body, color: Colors.textSecondary, marginRight: Spacing.sm + 2 },
+  statusBadge: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm - 2, borderRadius: Radius.sm },
+  statusBadgeText: { fontSize: FontSize.small + 1, fontWeight: '600' },
+  dayActionLabel: { fontSize: FontSize.small, color: Colors.textSecondary, marginBottom: Spacing.sm },
+  dayActions: { flexDirection: 'row', gap: Spacing.sm + 2, marginBottom: Spacing.lg },
   dayActionBtn: {
-    flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    flex: 1, alignItems: 'center', paddingVertical: Spacing.md,
+    borderRadius: Radius.md, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.border,
+    minHeight: 44,
   },
   dayActionBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryMuted },
   dayActionBtnSpend: { borderColor: Colors.error, backgroundColor: 'rgba(239,68,68,0.15)' },
-  dayActionEmoji: { fontSize: 20, marginBottom: 4 },
-  dayActionText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
-  dayItemsTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, marginBottom: 8 },
+  dayActionEmoji: { fontSize: 20, marginBottom: Spacing.xs },
+  dayActionText: { fontSize: FontSize.caption + 1, color: Colors.textSecondary, fontWeight: '600' },
+  dayItemsTitle: { fontSize: FontSize.body, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.sm },
   dayItemRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingVertical: Spacing.sm + 2, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  dayItemName: { fontSize: 15, color: Colors.textPrimary },
-  dayItemPrice: { fontSize: 15, fontWeight: '600', color: Colors.warning },
+  dayItemName: { fontSize: FontSize.body, color: Colors.textPrimary },
+  dayItemPrice: { fontSize: FontSize.body, fontWeight: '600', color: Colors.warning },
   closeBtn: {
-    marginTop: 16, padding: 14, borderRadius: 12, alignItems: 'center',
-    backgroundColor: Colors.primary,
+    marginTop: Spacing.md, paddingVertical: Spacing.md, borderRadius: Radius.md,
+    alignItems: 'center', backgroundColor: Colors.primary, minHeight: 48,
+    justifyContent: 'center',
   },
-  closeBtnText: { fontSize: 16, fontWeight: '600', color: Colors.background },
+  closeBtnText: { fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.background },
 });

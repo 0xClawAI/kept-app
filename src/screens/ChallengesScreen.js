@@ -1,9 +1,24 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../utils/colors';
+import { Colors, Spacing, FontSize, Radius, CardStyle } from '../utils/colors';
 import { useData } from '../context/DataContext';
 import { triggerHaptic, formatCurrency, getEnvelopeTotal, getWeeksTotal } from '../utils/helpers';
+
+function AnimatedProgressBar({ pct, color }) {
+  const widthAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(widthAnim, { toValue: pct, duration: 600, useNativeDriver: false }).start();
+  }, [pct]);
+  return (
+    <View style={styles.progressBarBg}>
+      <Animated.View style={[styles.progressBarFill, {
+        width: widthAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+        backgroundColor: color,
+      }]} />
+    </View>
+  );
+}
 
 function EnvelopeGrid({ envelopes, onToggle }) {
   return (
@@ -53,7 +68,7 @@ function WeekList({ weeks, onToggle }) {
 
 export default function ChallengesScreen() {
   const { envelopes, updateEnvelopes, weeks, updateWeeks, loaded } = useData();
-  const [activeChallenge, setActiveChallenge] = useState(null); // 'envelope' | 'week52' | null
+  const [activeChallenge, setActiveChallenge] = useState(null);
 
   const envTotal = useMemo(() => getEnvelopeTotal(envelopes), [envelopes]);
   const weekTotal = useMemo(() => getWeeksTotal(weeks), [weeks]);
@@ -75,22 +90,14 @@ export default function ChallengesScreen() {
   }, [weeks, updateWeeks]);
 
   const resetChallenge = (type) => {
-    Alert.alert(
-      'Reset Challenge',
-      'Are you sure? This will clear all progress.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => {
-            if (type === 'envelope') updateEnvelopes([]);
-            else updateWeeks([]);
-            triggerHaptic('medium');
-          },
-        },
-      ]
-    );
+    Alert.alert('Reset Challenge', 'Are you sure? This will clear all progress.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Reset', style: 'destructive', onPress: () => {
+        if (type === 'envelope') updateEnvelopes([]);
+        else updateWeeks([]);
+        triggerHaptic('medium');
+      }},
+    ]);
   };
 
   if (activeChallenge === 'envelope') {
@@ -101,7 +108,7 @@ export default function ChallengesScreen() {
             <TouchableOpacity onPress={() => setActiveChallenge(null)} style={styles.backBtn}>
               <Text style={styles.backBtnText}>‹ Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => resetChallenge('envelope')}>
+            <TouchableOpacity onPress={() => resetChallenge('envelope')} style={styles.resetTouchable}>
               <Text style={styles.resetText}>Reset</Text>
             </TouchableOpacity>
           </View>
@@ -111,13 +118,10 @@ export default function ChallengesScreen() {
             Tap envelopes to "stuff" them. Each envelope = its dollar amount. Complete all 100 to save $5,050!
           </Text>
 
-          {/* Progress */}
           <View style={styles.progressSection}>
             <Text style={styles.progressAmount}>{formatCurrency(envTotal)}</Text>
             <Text style={styles.progressOf}>of $5,050.00</Text>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${(envTotal / 5050) * 100}%`, backgroundColor: Colors.primary }]} />
-            </View>
+            <AnimatedProgressBar pct={(envTotal / 5050) * 100} color={Colors.primary} />
             <Text style={styles.progressCount}>{envelopes.length}/100 envelopes stuffed</Text>
           </View>
 
@@ -142,7 +146,7 @@ export default function ChallengesScreen() {
             <TouchableOpacity onPress={() => setActiveChallenge(null)} style={styles.backBtn}>
               <Text style={styles.backBtnText}>‹ Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => resetChallenge('week52')}>
+            <TouchableOpacity onPress={() => resetChallenge('week52')} style={styles.resetTouchable}>
               <Text style={styles.resetText}>Reset</Text>
             </TouchableOpacity>
           </View>
@@ -153,18 +157,16 @@ export default function ChallengesScreen() {
           </Text>
 
           <View style={styles.progressSection}>
-            <Text style={styles.progressAmount}>{formatCurrency(weekTotal)}</Text>
+            <Text style={[styles.progressAmount, { color: Colors.secondary }]}>{formatCurrency(weekTotal)}</Text>
             <Text style={styles.progressOf}>of $1,378.00</Text>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${(weekTotal / 1378) * 100}%`, backgroundColor: Colors.secondary }]} />
-            </View>
+            <AnimatedProgressBar pct={(weekTotal / 1378) * 100} color={Colors.secondary} />
             <Text style={styles.progressCount}>{weeks.length}/52 weeks completed</Text>
           </View>
 
           {weeks.length === 52 && (
             <View style={[styles.completeBanner, { borderColor: Colors.secondary }]}>
               <Text style={styles.completeEmoji}>🎉</Text>
-              <Text style={styles.completeText}>Challenge Complete! You saved $1,378!</Text>
+              <Text style={[styles.completeText, { color: Colors.secondary }]}>Challenge Complete! You saved $1,378!</Text>
             </View>
           )}
 
@@ -178,24 +180,19 @@ export default function ChallengesScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+          <Text style={{ color: Colors.textSecondary, fontSize: FontSize.bodyLarge }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Challenge Selection
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Challenges</Text>
         <Text style={styles.subtitle}>Pick a savings challenge and track your progress</Text>
 
-        <TouchableOpacity
-          style={styles.challengeCard}
-          onPress={() => setActiveChallenge('envelope')}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.challengeCard} onPress={() => setActiveChallenge('envelope')} activeOpacity={0.8}>
           <View style={styles.challengeCardHeader}>
             <Text style={styles.challengeCardIcon}>✉️</Text>
             <View style={styles.challengeCardInfo}>
@@ -217,11 +214,7 @@ export default function ChallengesScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.challengeCard}
-          onPress={() => setActiveChallenge('week52')}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.challengeCard} onPress={() => setActiveChallenge('week52')} activeOpacity={0.8}>
           <View style={styles.challengeCardHeader}>
             <Text style={styles.challengeCardIcon}>📊</Text>
             <View style={styles.challengeCardInfo}>
@@ -249,112 +242,92 @@ export default function ChallengesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -0.5 },
-  subtitle: { fontSize: 16, color: Colors.textSecondary, marginTop: 4, marginBottom: 24 },
+  scroll: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  title: { fontSize: FontSize.hero, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -1 },
+  subtitle: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.lg },
 
   challengeCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    ...CardStyle,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
   },
-  challengeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  challengeCardIcon: { fontSize: 36, marginRight: 16 },
+  challengeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+  challengeCardIcon: { fontSize: 36, marginRight: Spacing.md },
   challengeCardInfo: { flex: 1 },
-  challengeCardTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
-  challengeCardGoal: { fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
-  challengeCardProgress: { fontSize: 13, color: Colors.textSecondary, marginTop: 8 },
-  challengeCardCta: { fontSize: 15, color: Colors.primary, fontWeight: '600' },
+  challengeCardTitle: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.textPrimary },
+  challengeCardGoal: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: 2 },
+  challengeCardProgress: { fontSize: FontSize.small, color: Colors.textSecondary, marginTop: Spacing.sm },
+  challengeCardCta: { fontSize: FontSize.body, color: Colors.primary, fontWeight: '600' },
 
   miniProgressBg: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
   miniProgressFill: { height: 6, borderRadius: 3 },
 
-  // Challenge Detail
-  challengeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  backBtn: { paddingVertical: 8 },
-  backBtnText: { fontSize: 18, color: Colors.primary, fontWeight: '600' },
-  resetText: { fontSize: 15, color: Colors.error, fontWeight: '600' },
+  challengeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  backBtn: { minHeight: 44, justifyContent: 'center', paddingRight: Spacing.md },
+  backBtnText: { fontSize: FontSize.subtitle, color: Colors.primary, fontWeight: '600' },
+  resetTouchable: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'flex-end' },
+  resetText: { fontSize: FontSize.body, color: Colors.error, fontWeight: '600' },
 
-  challengeTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  challengeDesc: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: 20 },
+  challengeTitle: { fontSize: FontSize.title, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.sm },
+  challengeDesc: { fontSize: FontSize.body, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.lg },
 
-  progressSection: { alignItems: 'center', marginBottom: 24 },
+  progressSection: { alignItems: 'center', marginBottom: Spacing.lg },
   progressAmount: { fontSize: 40, fontWeight: '800', color: Colors.primary },
-  progressOf: { fontSize: 15, color: Colors.textSecondary, marginTop: 4 },
+  progressOf: { fontSize: FontSize.body, color: Colors.textSecondary, marginTop: Spacing.xs },
   progressBarBg: {
     height: 10,
     backgroundColor: Colors.border,
     borderRadius: 5,
     overflow: 'hidden',
     width: '100%',
-    marginTop: 16,
+    marginTop: Spacing.md,
   },
   progressBarFill: { height: 10, borderRadius: 5 },
-  progressCount: { fontSize: 14, color: Colors.textSecondary, marginTop: 8 },
+  progressCount: { fontSize: FontSize.small + 1, color: Colors.textSecondary, marginTop: Spacing.sm },
 
   completeBanner: {
     backgroundColor: Colors.primaryMuted,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.primary,
   },
-  completeEmoji: { fontSize: 40, marginBottom: 8 },
-  completeText: { fontSize: 18, fontWeight: '700', color: Colors.primary, textAlign: 'center' },
+  completeEmoji: { fontSize: 40, marginBottom: Spacing.sm },
+  completeText: { fontSize: FontSize.subtitle, fontWeight: '700', color: Colors.primary, textAlign: 'center' },
 
-  // Envelope Grid
   envelopeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'center',
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm - 2, justifyContent: 'center',
   },
   envelope: {
-    width: '18%',
-    aspectRatio: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    width: '18%', aspectRatio: 1,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+    minWidth: 44, minHeight: 44,
   },
-  envelopeStuffed: {
-    backgroundColor: Colors.primaryMuted,
-    borderColor: Colors.primary,
-  },
-  envelopeText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  envelopeTextStuffed: { fontSize: 16, color: Colors.primary },
+  envelopeStuffed: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
+  envelopeText: { fontSize: FontSize.caption + 1, fontWeight: '600', color: Colors.textSecondary },
+  envelopeTextStuffed: { fontSize: FontSize.bodyLarge, color: Colors.primary },
 
-  // Week List
-  weekList: { gap: 4 },
+  weekList: { gap: Spacing.xs },
   weekRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    padding: Spacing.md, gap: Spacing.md,
+    minHeight: 48,
   },
   weekRowDone: { backgroundColor: Colors.primaryMuted },
   weekCheck: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 28, height: 28, borderRadius: 14,
+    borderWidth: 2, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
   },
   weekCheckDone: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   weekCheckText: { fontSize: 14, color: '#fff', fontWeight: '700' },
-  weekLabel: { flex: 1, fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
+  weekLabel: { flex: 1, fontSize: FontSize.bodyLarge, fontWeight: '600', color: Colors.textPrimary },
   weekLabelDone: { color: Colors.textSecondary },
-  weekAmount: { fontSize: 16, fontWeight: '700', color: Colors.textSecondary },
+  weekAmount: { fontSize: FontSize.bodyLarge, fontWeight: '700', color: Colors.textSecondary },
   weekAmountDone: { color: Colors.secondary },
 });
