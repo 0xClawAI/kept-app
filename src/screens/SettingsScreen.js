@@ -15,6 +15,7 @@ export default function SettingsScreen() {
     envelopes, updateEnvelopes,
     weeks, updateWeeks,
     didntBuyItems, updateDidntBuyItems,
+    loaded,
   } = useData();
 
   const [ruleModalVisible, setRuleModalVisible] = useState(false);
@@ -101,6 +102,16 @@ export default function SettingsScreen() {
       ]
     );
   };
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

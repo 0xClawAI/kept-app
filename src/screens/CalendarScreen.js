@@ -21,7 +21,7 @@ const MONTHS = [
 ];
 
 export default function CalendarScreen() {
-  const { noSpendDays, updateNoSpendDays, didntBuyItems } = useData();
+  const { noSpendDays, updateNoSpendDays, didntBuyItems, loaded } = useData();
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -86,6 +86,16 @@ export default function CalendarScreen() {
 
   // Day detail items
   const selectedDayItems = selectedDay ? didntBuyItems.filter(i => i.date === selectedDay.key) : [];
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

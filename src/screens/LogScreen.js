@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Modal, TextInput, Alert, LayoutAnimation, Platform, UIManager,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../utils/colors';
@@ -12,25 +13,69 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const CATEGORIES = ['Food & Drink', 'Shopping', 'Entertainment', 'Clothing', 'Tech', 'Home', 'Other'];
+const CATEGORY_EMOJI = {
+  'Food & Drink': '☕',
+  'Shopping': '🛒',
+  'Entertainment': '🎬',
+  'Clothing': '👗',
+  'Tech': '📱',
+  'Home': '🏠',
+  'Other': '📦',
+};
+
 // ─── TAB: Didn't Buy It ─────────────────────────────
 function DidntBuyTab() {
   const { didntBuyItems, updateDidntBuyItems } = useData();
-  const [showAdd, setShowAdd] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [itemName, setItemName] = useState('');
   const [itemPrice, setItemPrice] = useState('');
+  const [itemCategory, setItemCategory] = useState('Other');
 
   const total = didntBuyItems.reduce((s, i) => s + (i.price || 0), 0);
 
-  const addItem = () => {
-    if (!itemName.trim()) return;
-    const price = parseFloat(itemPrice) || 0;
-    const newItem = { id: uuid(), name: itemName.trim(), price, date: getDateKey(new Date()) };
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    updateDidntBuyItems([newItem, ...didntBuyItems]);
+  const openAdd = () => {
+    setEditingItem(null);
     setItemName('');
     setItemPrice('');
-    setShowAdd(false);
+    setItemCategory('Other');
+    setShowModal(true);
+  };
+
+  const openEdit = (item) => {
+    setEditingItem(item);
+    setItemName(item.name);
+    setItemPrice(String(item.price));
+    setItemCategory(item.category || 'Other');
+    setShowModal(true);
+  };
+
+  const saveItem = () => {
+    if (!itemName.trim()) return;
+    const price = parseFloat(itemPrice) || 0;
+
+    if (editingItem) {
+      const updated = didntBuyItems.map(i =>
+        i.id === editingItem.id
+          ? { ...i, name: itemName.trim(), price, category: itemCategory }
+          : i
+      );
+      updateDidntBuyItems(updated);
+    } else {
+      const newItem = {
+        id: uuid(), name: itemName.trim(), price,
+        category: itemCategory, date: getDateKey(new Date()),
+      };
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      updateDidntBuyItems([newItem, ...didntBuyItems]);
+    }
     triggerHaptic('success');
+    setItemName('');
+    setItemPrice('');
+    setItemCategory('Other');
+    setEditingItem(null);
+    setShowModal(false);
   };
 
   const deleteItem = (id) => {
@@ -46,12 +91,43 @@ function DidntBuyTab() {
     ]);
   };
 
+  // Group by date
+  const groupedItems = useMemo(() => {
+    const groups = {};
+    didntBuyItems.forEach(item => {
+      const date = item.date || 'Unknown';
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(item);
+    });
+    return groups;
+  }, [didntBuyItems]);
+
+  const sortedDates = useMemo(() =>
+    Object.keys(groupedItems).sort((a, b) => b.localeCompare(a)),
+    [groupedItems]
+  );
+
+  const formatDate = (dateStr) => {
+    const todayKey = getDateKey(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = getDateKey(yesterday);
+    if (dateStr === todayKey) return 'Today';
+    if (dateStr === yesterdayKey) return 'Yesterday';
+    const parts = dateStr.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[parseInt(parts[1]) - 1]} ${parseInt(parts[2])}`;
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Total Banner */}
       <View style={styles.totalBanner}>
         <Text style={styles.totalLabel}>Saved by not buying</Text>
         <Text style={styles.totalValue}>{formatCurrency(total)}</Text>
+        <Text style={styles.totalCount}>
+          {didntBuyItems.length} item{didntBuyItems.length !== 1 ? 's' : ''} resisted
+        </Text>
       </View>
 
       {didntBuyItems.length === 0 ? (
@@ -59,45 +135,68 @@ function DidntBuyTab() {
           <Text style={styles.emptyIcon}>🛡️</Text>
           <Text style={styles.emptyTitle}>Nothing yet!</Text>
           <Text style={styles.emptyText}>
-            Resisted buying something? Log it here to see how much you're saving.
+            Resisted buying something? Tap + to log it and watch your savings grow.
           </Text>
         </View>
       ) : (
         <View style={styles.itemList}>
-          {didntBuyItems.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.itemRow}
-              onLongPress={() => deleteItem(item.id)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemDate}>{item.date}</Text>
+          {sortedDates.map(date => (
+            <View key={date}>
+              <View style={styles.dateHeader}>
+                <Text style={styles.dateHeaderText}>{formatDate(date)}</Text>
+                <Text style={styles.dateHeaderAmount}>
+                  {formatCurrency(groupedItems[date].reduce((s, i) => s + (i.price || 0), 0))}
+                </Text>
               </View>
-              <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-            </TouchableOpacity>
+              {groupedItems[date].map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.itemRow}
+                  onPress={() => openEdit(item)}
+                  onLongPress={() => deleteItem(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.categoryDot}>
+                    <Text style={styles.categoryEmoji}>
+                      {CATEGORY_EMOJI[item.category] || '📦'}
+                    </Text>
+                  </View>
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemMeta}>{item.category || 'Other'}</Text>
+                  </View>
+                  <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           ))}
-          <Text style={styles.longPressHint}>Long-press to delete an item</Text>
+          <Text style={styles.longPressHint}>Tap to edit • Long-press to delete</Text>
         </View>
       )}
 
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => { setShowAdd(true); triggerHaptic('light'); }}
+        onPress={() => { openAdd(); triggerHaptic('light'); }}
         activeOpacity={0.8}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      {/* Add Modal */}
-      <Modal visible={showAdd} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+      {/* Add/Edit Modal */}
+      <Modal visible={showModal} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Didn't Buy It! 🛡️</Text>
-            <Text style={styles.modalSubtitle}>What did you resist buying?</Text>
+            <Text style={styles.modalTitle}>
+              {editingItem ? 'Edit Item' : 'Didn\'t Buy It! 🛡️'}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              {editingItem ? 'Update this item' : 'What did you resist buying?'}
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -116,23 +215,40 @@ function DidntBuyTab() {
               keyboardType="decimal-pad"
             />
 
+            <Text style={styles.categoryLabel}>Category</Text>
+            <View style={styles.categoryGrid}>
+              {CATEGORIES.map(cat => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.categoryChip, itemCategory === cat && styles.categoryChipActive]}
+                  onPress={() => setItemCategory(cat)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.categoryChipText,
+                    itemCategory === cat && styles.categoryChipTextActive,
+                  ]}>{CATEGORY_EMOJI[cat]} {cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelBtn}
-                onPress={() => { setShowAdd(false); setItemName(''); setItemPrice(''); }}
+                onPress={() => { setShowModal(false); setEditingItem(null); setItemName(''); setItemPrice(''); }}
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveBtn, !itemName.trim() && styles.saveBtnDisabled]}
-                onPress={addItem}
+                onPress={saveItem}
                 disabled={!itemName.trim()}
               >
-                <Text style={styles.saveBtnText}>Save</Text>
+                <Text style={styles.saveBtnText}>{editingItem ? 'Update' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -142,16 +258,36 @@ function DidntBuyTab() {
 function RulesTab() {
   const { rules, updateRules } = useData();
   const [showAdd, setShowAdd] = useState(false);
+  const [editingRule, setEditingRule] = useState(null);
   const [ruleText, setRuleText] = useState('');
 
-  const addRule = () => {
-    if (!ruleText.trim()) return;
-    const newRule = { id: uuid(), text: ruleText.trim(), active: true };
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    updateRules([...rules, newRule]);
+  const openAdd = () => {
+    setEditingRule(null);
     setRuleText('');
-    setShowAdd(false);
+    setShowAdd(true);
+  };
+
+  const openEdit = (rule) => {
+    setEditingRule(rule);
+    setRuleText(rule.text);
+    setShowAdd(true);
+  };
+
+  const saveRule = () => {
+    if (!ruleText.trim()) return;
+    if (editingRule) {
+      updateRules(rules.map(r =>
+        r.id === editingRule.id ? { ...r, text: ruleText.trim() } : r
+      ));
+    } else {
+      const newRule = { id: uuid(), text: ruleText.trim(), active: true };
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      updateRules([...rules, newRule]);
+    }
     triggerHaptic('success');
+    setRuleText('');
+    setEditingRule(null);
+    setShowAdd(false);
   };
 
   const toggleRule = (id) => {
@@ -198,28 +334,42 @@ function RulesTab() {
               <Text style={[styles.ruleText, !rule.active && styles.ruleTextInactive]}>
                 {rule.text}
               </Text>
+              <TouchableOpacity
+                onPress={() => openEdit(rule)}
+                style={styles.editBtn}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.editBtnText}>✏️</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           ))}
-          <Text style={styles.longPressHint}>Tap to toggle • Long-press to delete</Text>
+          <Text style={styles.longPressHint}>Tap to toggle • ✏️ to edit • Long-press to delete</Text>
         </View>
       )}
 
       {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: Colors.secondary }]}
-        onPress={() => { setShowAdd(true); triggerHaptic('light'); }}
+        onPress={() => { openAdd(); triggerHaptic('light'); }}
         activeOpacity={0.8}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      {/* Add Modal */}
+      {/* Add/Edit Modal */}
       <Modal visible={showAdd} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>New Rule 📋</Text>
-            <Text style={styles.modalSubtitle}>What are you committing to not buy?</Text>
+            <Text style={styles.modalTitle}>
+              {editingRule ? 'Edit Rule' : 'New Rule 📋'}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              {editingRule ? 'Update this rule' : 'What are you committing to not buy?'}
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -233,20 +383,20 @@ function RulesTab() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.cancelBtn}
-                onPress={() => { setShowAdd(false); setRuleText(''); }}
+                onPress={() => { setShowAdd(false); setRuleText(''); setEditingRule(null); }}
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveBtn, { backgroundColor: Colors.secondary }, !ruleText.trim() && styles.saveBtnDisabled]}
-                onPress={addRule}
+                onPress={saveRule}
                 disabled={!ruleText.trim()}
               >
-                <Text style={styles.saveBtnText}>Add Rule</Text>
+                <Text style={styles.saveBtnText}>{editingRule ? 'Update' : 'Add Rule'}</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -254,7 +404,18 @@ function RulesTab() {
 
 // ─── MAIN SCREEN ─────────────────────────────
 export default function LogScreen() {
+  const { loaded } = useData();
   const [activeTab, setActiveTab] = useState('didntbuy');
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -297,6 +458,8 @@ const styles = StyleSheet.create({
     fontSize: 28, fontWeight: '800', color: Colors.textPrimary,
     letterSpacing: -0.5, paddingHorizontal: 20, paddingTop: 8,
   },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: Colors.textSecondary, fontSize: 16 },
 
   tabBar: {
     flexDirection: 'row',
@@ -330,22 +493,37 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
   totalValue: { fontSize: 36, fontWeight: '800', color: Colors.primary, marginTop: 4 },
+  totalCount: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
 
   emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 20 },
   emptyIcon: { fontSize: 48, marginBottom: 16 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
   emptyText: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 
+  dateHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 8, marginTop: 8,
+  },
+  dateHeaderText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  dateHeaderAmount: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+
   itemList: { gap: 6 },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
   },
+  categoryDot: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: Colors.surfaceElevated, alignItems: 'center', justifyContent: 'center',
+    marginRight: 12,
+  },
+  categoryEmoji: { fontSize: 18 },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
+  itemMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   itemDate: { fontSize: 13, color: Colors.textDisabled, marginTop: 2 },
   itemPrice: { fontSize: 18, fontWeight: '700', color: Colors.primary },
 
@@ -369,6 +547,8 @@ const styles = StyleSheet.create({
   ruleCheckText: { fontSize: 14, color: '#fff', fontWeight: '700' },
   ruleText: { flex: 1, fontSize: 16, fontWeight: '500', color: Colors.textPrimary },
   ruleTextInactive: { textDecorationLine: 'line-through', color: Colors.textDisabled },
+  editBtn: { padding: 4 },
+  editBtnText: { fontSize: 16 },
 
   fab: {
     position: 'absolute',
@@ -387,6 +567,16 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabText: { fontSize: 28, fontWeight: '400', color: '#000' },
+
+  categoryLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 8 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  categoryChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+  },
+  categoryChipActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
+  categoryChipText: { fontSize: 12, color: Colors.textSecondary },
+  categoryChipTextActive: { color: Colors.primary, fontWeight: '600' },
 
   modalOverlay: {
     flex: 1,

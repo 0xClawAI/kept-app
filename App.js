@@ -10,10 +10,11 @@ import HomeScreen from './src/screens/HomeScreen';
 import CalendarScreen from './src/screens/CalendarScreen';
 import ChallengesScreen from './src/screens/ChallengesScreen';
 import LogScreen from './src/screens/LogScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
-const ICONS = { Home: '🏠', Calendar: '📅', Challenges: '🏆', Log: '📝' };
+const ICONS = { Home: '🏠', Calendar: '📅', Challenges: '🏆', Log: '📝', Settings: '⚙️' };
 
 export default function App() {
   return (
@@ -58,6 +59,7 @@ export default function App() {
             <Tab.Screen name="Calendar" component={CalendarScreen} />
             <Tab.Screen name="Challenges" component={ChallengesScreen} />
             <Tab.Screen name="Log" component={LogScreen} />
+            <Tab.Screen name="Settings" component={SettingsScreen} />
           </Tab.Navigator>
         </NavigationContainer>
       </DataProvider>

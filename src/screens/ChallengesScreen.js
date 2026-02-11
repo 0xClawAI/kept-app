@@ -52,7 +52,7 @@ function WeekList({ weeks, onToggle }) {
 }
 
 export default function ChallengesScreen() {
-  const { envelopes, updateEnvelopes, weeks, updateWeeks } = useData();
+  const { envelopes, updateEnvelopes, weeks, updateWeeks, loaded } = useData();
   const [activeChallenge, setActiveChallenge] = useState(null); // 'envelope' | 'week52' | null
 
   const envTotal = useMemo(() => getEnvelopeTotal(envelopes), [envelopes]);
@@ -170,6 +170,16 @@ export default function ChallengesScreen() {
 
           <WeekList weeks={weeks} onToggle={toggleWeek} />
         </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (!loaded) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>Loading...</Text>
+        </View>
       </SafeAreaView>
     );
   }
