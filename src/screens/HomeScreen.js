@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../utils/colors';
 import { useData } from '../context/DataContext';
+import Confetti from '../components/Confetti';
 import {
   calculateStreak, calculateLongestStreak, formatCurrency,
   getEnvelopeTotal, getWeeksTotal, getDidntBuyTotal, getDateKey,
@@ -53,6 +54,24 @@ export default function HomeScreen() {
     return { streak, longest, envTotal, weekTotal, dbiTotal, totalSaved, noSpendCount, todayStatus };
   }, [noSpendDays, envelopes, weeks, didntBuyItems]);
 
+  const [showConfetti, setShowConfetti] = useState(false);
+  const prevTotalRef = useRef(stats.totalSaved);
+
+  useEffect(() => {
+    if (stats.totalSaved > prevTotalRef.current && stats.totalSaved > 0) {
+      // Check milestones
+      const milestones = [100, 500, 1000, 2500, 5050];
+      for (const m of milestones) {
+        if (prevTotalRef.current < m && stats.totalSaved >= m) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3000);
+          break;
+        }
+      }
+    }
+    prevTotalRef.current = stats.totalSaved;
+  }, [stats.totalSaved]);
+
   if (!loaded) {
     return (
       <SafeAreaView style={styles.container}>
@@ -67,6 +86,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <Confetti trigger={showConfetti} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

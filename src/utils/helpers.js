@@ -3,11 +3,11 @@ import * as Haptics from 'expo-haptics';
 export function triggerHaptic(type = 'medium') {
   try {
     if (type === 'success') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.success);
     } else if (type === 'light') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.light);
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.medium);
     }
   } catch {}
 }
